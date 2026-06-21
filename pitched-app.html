@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0E1512">
+<title>Pitched</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0E1512; --bg-2:#121A16; --surface:#18211D; --surface-2:#1F2A24; --surface-3:#26332C;
+    --line:rgba(225,232,224,.10); --line-2:rgba(225,232,224,.055); --line-3:rgba(225,232,224,.16);
+    --text:#F3F1E8; --text-2:#C9D0C8; --muted:#909C92; --muted-2:#6A766E;
+    --gold:#D6AA5C; --gold-2:#E7C681; --gold-soft:rgba(214,170,92,.13); --gold-line:rgba(214,170,92,.40); --gold-glow:rgba(214,170,92,.18);
+    --ink:#0E1512;
+    --radius:18px; --radius-sm:12px;
+    --sh:0 1px 0 rgba(255,255,255,.03) inset, 0 10px 30px rgba(0,0,0,.35);
+    --sh-lg:0 24px 60px rgba(0,0,0,.55);
+    --fd:"Bricolage Grotesque","Hanken Grotesk",system-ui,sans-serif;
+    --fb:"Hanken Grotesk",system-ui,-apple-system,sans-serif;
+    --fm:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{font-family:var(--fb);color:var(--text);background:#070A09;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;overscroll-behavior-y:none}
+  #app{max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;background:var(--bg);position:relative;display:flex;flex-direction:column;box-shadow:0 0 80px rgba(0,0,0,.5);overflow:hidden}
+  ::selection{background:var(--gold);color:var(--ink)}
+
+  /* ---------------- Header ---------------- */
+  header.top{background:linear-gradient(180deg,#101714,#0E1512);padding:15px 18px 13px;position:sticky;top:0;z-index:40;border-bottom:1px solid var(--line-2)}
+  .top-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .brand{display:flex;align-items:center;gap:8px;font-family:var(--fd);font-weight:800;font-size:22px;letter-spacing:-.03em}
+  .brand .mk{width:11px;height:11px;flex:none;position:relative;margin-bottom:3px}
+  .brand .mk:before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--gold);box-shadow:0 0 14px var(--gold-glow)}
+  .brand .mk:after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--bg)}
+  .seg{display:flex;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:11px;padding:3px;gap:3px}
+  .seg button{font-family:var(--fb);font-weight:600;font-size:12.5px;color:var(--muted);background:none;border:none;padding:7px 13px;border-radius:8px;cursor:pointer;transition:.18s;letter-spacing:.01em}
+  .seg button.on{background:var(--text);color:var(--ink)}
+  .ctx{font-size:11.5px;color:var(--muted-2);margin-top:10px;letter-spacing:.04em;display:flex;align-items:center;gap:7px}
+  .ctx b{color:var(--text-2);font-weight:600}
+  .ctx .live{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 0 var(--gold-glow);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(214,170,92,.5)}70%{box-shadow:0 0 0 7px rgba(214,170,92,0)}100%{box-shadow:0 0 0 0 rgba(214,170,92,0)}}
+
+  /* ---------------- Main ---------------- */
+  main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 18px 120px}
+  main.anim{animation:rise .34s cubic-bezier(.2,.7,.2,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){main.anim{animation:none}*{transition:none!important}}
+
+  .stack-head{display:flex;align-items:center;margin:-4px 0 16px}
+  .back{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--text-2);font-family:var(--fb);font-weight:600;font-size:14px;cursor:pointer;padding:7px 2px}
+  .back svg{width:18px;height:18px}
+
+  .eyebrow{font-family:var(--fm);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:11px}
+  h1.screen{font-family:var(--fd);font-weight:700;font-size:29px;letter-spacing:-.035em;line-height:1.05;margin-bottom:7px}
+  .sub{color:var(--muted);font-size:14.5px;line-height:1.5;margin-bottom:20px}
+
+  /* ---------------- Hero ---------------- */
+  .hero{position:relative;padding:6px 0 22px;margin-bottom:6px}
+  .hero h2{font-family:var(--fd);font-weight:700;font-size:36px;line-height:1.0;letter-spacing:-.04em;margin-bottom:14px}
+  .hero h2 .g{color:var(--gold)}
+  .hero p{font-size:15px;color:var(--text-2);line-height:1.5;max-width:330px;margin-bottom:20px}
+  .supply{display:flex;align-items:center;gap:11px;margin-bottom:22px}
+  .stackav{display:flex}
+  .stackav .av{width:32px;height:32px;border-radius:50%;border:2px solid var(--bg);margin-left:-9px;font-size:12px;border-radius:50%}
+  .stackav .av:first-child{margin-left:0}
+  .supply .txt{font-size:12.5px;color:var(--muted);line-height:1.3}
+  .supply .txt b{color:var(--text);font-weight:600}
+
+  /* ---------------- Buttons ---------------- */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:15px 20px;border-radius:14px;border:none;font-family:var(--fb);font-weight:600;font-size:15px;cursor:pointer;transition:transform .12s,background .18s,box-shadow .2s;letter-spacing:.005em}
+  .btn svg{width:18px;height:18px}
+  .btn:active{transform:translateY(1px) scale(.995)}
+  .btn-gold{background:linear-gradient(180deg,var(--gold-2),var(--gold));color:var(--ink);font-weight:700;box-shadow:0 6px 22px rgba(214,170,92,.28),0 1px 0 rgba(255,255,255,.3) inset}
+  .btn-gold:active{box-shadow:0 3px 12px rgba(214,170,92,.3)}
+  .btn-light{background:var(--text);color:var(--ink);font-weight:700}
+  .btn-line{background:rgba(255,255,255,.025);color:var(--text);border:1px solid var(--line-3)}
+  .btn-line:active{background:rgba(255,255,255,.05)}
+  .btn-sm{width:auto;padding:10px 16px;font-size:13.5px;border-radius:11px}
+  .btn:disabled{opacity:.5}
+
+  /* ---------------- Cards ---------------- */
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--sh)}
+  .pad{padding:17px}
+
+  /* vetted chip */
+  .vet{display:inline-flex;align-items:center;gap:4px;font-family:var(--fm);font-size:10.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);background:var(--gold-soft);border:1px solid var(--gold-line);padding:3px 9px 3px 6px;border-radius:30px;white-space:nowrap}
+  .vet svg{width:11px;height:11px}
+  .badge{font-size:11px;font-weight:600;padding:4px 10px;border-radius:30px;white-space:nowrap;letter-spacing:.01em}
+  .badge-cat{background:var(--surface-2);color:var(--text-2);border:1px solid var(--line)}
+  .badge-open{background:var(--gold-soft);color:var(--gold);border:1px solid var(--gold-line)}
+  .badge-match{background:rgba(120,200,160,.1);color:#7FD0A4;border:1px solid rgba(120,200,160,.25)}
+
+  /* provider card */
+  .pcard{padding:16px;margin-bottom:13px;cursor:pointer;transition:transform .14s,border-color .18s}
+  .pcard:active{transform:scale(.99)}
+  .pc-top{display:flex;gap:13px;align-items:flex-start;margin-bottom:14px}
+  .av{flex:none;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:700;color:#0E1512;letter-spacing:-.02em;border-radius:13px;width:48px;height:48px;font-size:18px;position:relative}
+  .pc-name{display:flex;align-items:center;gap:7px;font-weight:600;font-size:16px;letter-spacing:-.01em;line-height:1.1}
+  .pc-cat{font-size:12.5px;color:var(--gold);font-weight:600;margin-top:3px;letter-spacing:.01em}
+  .pc-head{font-size:13.5px;color:var(--text-2);line-height:1.45;margin-top:5px}
+  .pc-meta{display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line-2);padding-top:13px;flex-wrap:wrap}
+  .pc-meta .rt{display:inline-flex;align-items:center;gap:4px;color:var(--text-2);font-weight:600}
+  .pc-meta .rt svg{width:13px;height:13px;color:var(--gold)}
+  .pc-meta .mono{font-family:var(--fm);font-weight:600;color:var(--text);font-size:12px}
+  .sep{width:3px;height:3px;border-radius:50%;background:var(--line-3);display:inline-block}
+  .from{margin-left:auto;font-family:var(--fm);font-size:12px;color:var(--text);font-weight:600}
+
+  /* spotlight */
+  .spot{position:relative;padding:17px;margin-bottom:22px;border:1px solid var(--gold-line);background:linear-gradient(180deg,rgba(214,170,92,.06),rgba(214,170,92,.015));border-radius:var(--radius);overflow:hidden;cursor:pointer}
+  .spot:before{content:"";position:absolute;right:-40px;top:-50px;width:160px;height:160px;border-radius:50%;background:radial-gradient(circle,var(--gold-glow),transparent 70%);pointer-events:none}
+  .spot-label{font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:13px;display:flex;align-items:center;gap:6px}
+  .spot-label svg{width:13px;height:13px}
+
+  /* chips */
+  .chips{display:flex;gap:9px;overflow-x:auto;padding:2px 18px 16px;margin:0 -18px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;font-size:13px;font-weight:600;padding:9px 15px;border-radius:30px;border:1px solid var(--line);background:rgba(255,255,255,.02);color:var(--text-2);cursor:pointer;white-space:nowrap;transition:.14s}
+  .chip.on{background:var(--text);color:var(--ink);border-color:var(--text)}
+
+  /* search */
+  .search{position:relative;margin-bottom:8px}
+  .search svg{position:absolute;left:15px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted-2)}
+  .search input{width:100%;padding:14px 15px 14px 43px;border:1px solid var(--line);border-radius:13px;font-family:var(--fb);font-size:15px;background:var(--surface);color:var(--text);outline:none;transition:.15s}
+  .search input::placeholder{color:var(--muted-2)}
+  .search input:focus{border-color:var(--gold-line);box-shadow:0 0 0 3px var(--gold-soft)}
+
+  /* brief card */
+  .brief{padding:17px;margin-bottom:13px;cursor:pointer;transition:transform .14s}
+  .brief:active{transform:scale(.99)}
+  .brief-top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:11px}
+  .brief h3{font-family:var(--fd);font-size:18px;font-weight:600;letter-spacing:-.02em;line-height:1.2;margin-bottom:9px}
+  .brief-desc{font-size:13.5px;color:var(--muted);line-height:1.5;margin-bottom:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .brief-foot{display:flex;align-items:center;gap:11px;font-size:12.5px;color:var(--text-2);font-weight:500;border-top:1px solid var(--line-2);padding-top:14px;flex-wrap:wrap}
+  .brief-foot .pill{display:inline-flex;align-items:center;gap:6px}
+  .brief-foot .pill svg{width:14px;height:14px;color:var(--muted-2)}
+  .brief-foot .mono{font-family:var(--fm);font-weight:600;color:var(--text);font-size:12px}
+  .pcount{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-weight:600;color:var(--gold);font-family:var(--fm);font-size:12px}
+  .pcount.green{color:#7FD0A4}
+
+  /* forms */
+  .field{margin-bottom:17px}
+  .field label{display:block;font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text)}
+  .field input,.field textarea,.field select{width:100%;padding:14px 15px;border:1px solid var(--line);border-radius:12px;font-family:var(--fb);font-size:15px;color:var(--text);background:var(--surface);outline:none;-webkit-appearance:none;transition:.15s}
+  .field input::placeholder,.field textarea::placeholder{color:var(--muted-2)}
+  .field textarea{resize:none;line-height:1.5;min-height:118px}
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--gold-line);box-shadow:0 0 0 3px var(--gold-soft)}
+  .field .hint{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.45}
+  .field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23909C92' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:42px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+  /* compare (signature) */
+  .divider{height:1px;background:var(--line);margin:22px 0}
+  .compare-intro{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}
+  .compare-hint{font-family:var(--fm);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;letter-spacing:.04em}
+  .compare-hint svg{width:15px;height:15px}
+  .scroller{display:flex;gap:13px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -18px;padding:4px 18px 8px;scrollbar-width:none}
+  .scroller::-webkit-scrollbar{display:none}
+  .pitch{flex:none;width:282px;scroll-snap-align:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--sh);display:flex;flex-direction:column;overflow:hidden;position:relative}
+  .pitch.fit{border-color:var(--gold-line);box-shadow:0 0 0 1px var(--gold-line),0 16px 40px rgba(0,0,0,.4)}
+  .fit-tag{position:absolute;top:0;left:0;right:0;background:linear-gradient(180deg,var(--gold-2),var(--gold));color:var(--ink);font-family:var(--fm);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:5px}
+  .pitch-hd{padding:15px;border-bottom:1px solid var(--line-2);display:flex;gap:12px;align-items:center}
+  .pitch.fit .pitch-hd{padding-top:31px}
+  .pitch-hd .av{width:42px;height:42px;border-radius:12px;font-size:16px}
+  .pitch-name{font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px;line-height:1.1}
+  .pitch-rate{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:4px}
+  .pitch-rate svg{width:11px;height:11px;color:var(--gold)}
+  .pitch-spec{display:flex;border-bottom:1px solid var(--line-2)}
+  .pitch-spec .s{flex:1;padding:13px 15px}
+  .pitch-spec .s+.s{border-left:1px solid var(--line-2)}
+  .pitch-spec .sl{font-family:var(--fm);font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2);margin-bottom:6px}
+  .pitch-spec .sv{font-family:var(--fm);font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--text)}
+  .pitch-body{padding:15px;font-size:13px;line-height:1.55;color:var(--text-2);flex:1}
+  .pitch-foot{padding:13px 15px;border-top:1px solid var(--line-2);display:flex;gap:9px}
+  .tag-you{font-family:var(--fm);font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);background:var(--gold-soft);border:1px solid var(--gold-line);padding:2px 8px;border-radius:30px;margin-left:auto}
+
+  /* profile */
+  .prof-hd{display:flex;gap:15px;align-items:center;margin-bottom:19px}
+  .prof-hd .av{width:66px;height:66px;border-radius:18px;font-size:25px}
+  .prof-name{font-family:var(--fd);font-weight:700;font-size:23px;letter-spacing:-.025em;display:flex;align-items:center;gap:8px;line-height:1.05}
+  .prof-cat{color:var(--gold);font-weight:600;font-size:13.5px;margin-top:5px}
+  .stat-row{display:flex;gap:11px;margin-bottom:21px}
+  .stat{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 10px;text-align:center}
+  .stat .v{font-family:var(--fm);font-weight:600;font-size:18px;letter-spacing:-.02em;color:var(--text)}
+  .stat .l{font-size:10.5px;color:var(--muted);margin-top:5px;font-weight:500;letter-spacing:.02em}
+  .sec-title{font-family:var(--fm);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:24px 0 12px}
+  .svc-list{display:flex;flex-wrap:wrap;gap:9px}
+  .svc{font-size:13px;padding:9px 14px;background:var(--surface);border:1px solid var(--line);border-radius:11px;color:var(--text-2);font-weight:500}
+  .body-txt{font-size:14.5px;line-height:1.6;color:var(--text-2)}
+  .pmeta{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--text-2);margin-bottom:10px}
+  .pmeta svg{width:16px;height:16px;color:var(--gold)}
+  .review{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px;margin-bottom:11px}
+  .rv-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .rv-who{font-size:13.5px;font-weight:600}
+  .rv-stars{font-size:12px;color:var(--gold);letter-spacing:1px}
+  .rv-txt{font-size:13.5px;color:var(--text-2);line-height:1.55}
+  .sticky-cta{position:absolute;bottom:0;left:0;right:0;padding:14px 18px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(to top,var(--bg) 65%,transparent);z-index:15}
+
+  /* completeness */
+  .completeness{background:linear-gradient(180deg,var(--surface),var(--bg-2));border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:20px}
+  .cbar{height:7px;background:rgba(255,255,255,.06);border-radius:10px;overflow:hidden;margin:11px 0 9px}
+  .cbar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-2));border-radius:10px}
+
+  /* tokens */
+  .tokbal{display:flex;align-items:center;gap:13px;background:linear-gradient(160deg,rgba(214,170,92,.11),rgba(214,170,92,.02));border:1px solid var(--gold-line);border-radius:16px;padding:14px 15px;margin-bottom:20px}
+  .tokbal .coin{flex:none;width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,var(--gold-2),var(--gold));display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  .tokbal .coin svg{width:22px;height:22px}
+  .tokbal .tb-n{font-family:var(--fm);font-size:22px;font-weight:600;line-height:1;letter-spacing:-.02em}
+  .tokbal .tb-l{font-size:12px;color:var(--muted);margin-top:4px}
+  .tokbal .tb-btn{margin-left:auto}
+  .costnote{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--gold-2);background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:11px 13px;line-height:1.4;margin-bottom:14px}
+  .costnote svg{width:16px;height:16px;flex:none;color:var(--gold)}
+  .pack{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;cursor:pointer;transition:transform .14s,border-color .18s;position:relative}
+  .pack:active{transform:scale(.99)}
+  .pack.pop{border-color:var(--gold-line)}
+  .pack .pq{font-family:var(--fd);font-weight:700;font-size:25px;letter-spacing:-.02em;min-width:50px}
+  .pack .pq small{display:block;font-family:var(--fb);font-size:11px;font-weight:500;color:var(--muted);margin-top:3px}
+  .pack .pp{font-family:var(--fm);font-size:16px;font-weight:600;color:var(--text)}
+  .pack .pe{font-size:12px;color:var(--muted);margin-top:4px}
+  .pack .pget{margin-left:auto;font-family:var(--fm);font-size:12px;font-weight:600;color:var(--gold);border:1px solid var(--gold-line);padding:9px 14px;border-radius:10px;white-space:nowrap}
+  .pack .poptag{position:absolute;top:-9px;left:16px;background:linear-gradient(180deg,var(--gold-2),var(--gold));color:var(--ink);font-family:var(--fm);font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px}
+  .savedcard{display:flex;align-items:center;gap:13px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px}
+  .savedcard .cbrand{flex:none;width:46px;height:32px;border-radius:7px;background:linear-gradient(145deg,#2a3a33,#1c2722);border:1px solid var(--line-3);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:10px;font-weight:600;color:var(--gold)}
+  .savedcard .cnum{font-family:var(--fm);font-size:14.5px;font-weight:600;letter-spacing:.04em}
+  .savedcard .cexp{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .savedcard .crm{margin-left:auto;font-size:12.5px;color:var(--text-2);border:1px solid var(--line-3);padding:8px 13px;border-radius:9px;cursor:pointer}
+  .switch-row{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px;cursor:pointer}
+  .switch-row .sw-txt{flex:1}
+  .switch-row .sw-txt b{font-size:14px;font-weight:600;display:block;margin-bottom:3px}
+  .switch-row .sw-txt span{font-size:12.5px;color:var(--muted);line-height:1.45}
+  .sw{flex:none;width:48px;height:28px;border-radius:20px;background:var(--surface-3);border:1px solid var(--line-3);position:relative;transition:.2s}
+  .sw.on{background:linear-gradient(180deg,var(--gold-2),var(--gold));border-color:transparent}
+  .sw:after{content:"";position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .sw.on:after{left:22px}
+  .securenote{display:flex;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:18px}
+  .securenote svg{width:16px;height:16px;flex:none;margin-top:1px;color:var(--green)}
+
+  /* messages */
+  .thread-item{display:flex;gap:13px;align-items:center;padding:14px 4px;border-bottom:1px solid var(--line-2);cursor:pointer;transition:.12s}
+  .thread-item:active{background:rgba(255,255,255,.025)}
+  .ti-body{flex:1;min-width:0}
+  .ti-name{font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:6px}
+  .ti-last{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
+  .ti-sub{font-size:11.5px;color:var(--muted-2);margin-top:2px;letter-spacing:.01em}
+  .chat-hd{display:flex;align-items:center;gap:12px;margin-bottom:10px;padding-bottom:15px;border-bottom:1px solid var(--line)}
+  .msgs{display:flex;flex-direction:column;gap:10px;padding:6px 0 14px}
+  .bub{max-width:80%;padding:11px 14px;border-radius:17px;font-size:14px;line-height:1.45}
+  .bub.them{background:var(--surface);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:5px;color:var(--text)}
+  .bub.you{background:var(--text);color:var(--ink);align-self:flex-end;border-bottom-right-radius:5px;font-weight:500}
+  .composer{position:absolute;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--line);padding:12px 15px calc(12px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:flex-end;z-index:25}
+  .composer textarea{flex:1;border:1px solid var(--line);border-radius:22px;padding:12px 16px;font-family:var(--fb);font-size:15px;resize:none;max-height:100px;outline:none;background:var(--surface);color:var(--text);line-height:1.35}
+  .composer textarea:focus{border-color:var(--gold-line)}
+  .send{width:44px;height:44px;border-radius:50%;background:linear-gradient(180deg,var(--gold-2),var(--gold));border:none;color:var(--ink);flex:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .send:active{transform:scale(.94)}
+  .send svg{width:19px;height:19px}
+
+  /* tabs */
+  nav.tabs{position:absolute;bottom:0;left:0;right:0;background:rgba(14,21,18,.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line);display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom));z-index:30}
+  nav.tabs button{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;cursor:pointer;color:var(--muted-2);font-family:var(--fb);font-size:10.5px;font-weight:600;letter-spacing:.01em;transition:.15s}
+  nav.tabs button.on{color:var(--gold)}
+  nav.tabs svg{width:23px;height:23px}
+  .tb{position:relative}
+  .tb:after{content:attr(data-n);position:absolute;top:-4px;right:-10px;background:var(--gold);color:var(--ink);font-family:var(--fm);font-size:9px;font-weight:600;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+
+  /* misc */
+  .vetnote{display:flex;gap:11px;background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:14px;padding:14px;font-size:12.5px;color:var(--gold-2);line-height:1.5;margin-bottom:20px}
+  .vetnote svg{width:18px;height:18px;flex:none;margin-top:1px;color:var(--gold)}
+  .empty{text-align:center;padding:50px 24px;color:var(--muted)}
+  .empty .ic{width:54px;height:54px;border-radius:16px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+  .empty .ic svg{width:24px;height:24px;color:var(--muted-2)}
+  .empty .big{font-weight:600;color:var(--text);font-size:15.5px;margin-bottom:5px}
+  .empty p{font-size:13.5px;line-height:1.5}
+  .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%) translateY(20px);background:var(--surface-3);color:var(--text);padding:13px 19px;border-radius:30px;font-size:13.5px;font-weight:600;box-shadow:var(--sh-lg);border:1px solid var(--line-3);opacity:0;transition:.3s cubic-bezier(.2,.7,.2,1);z-index:60;max-width:88%;text-align:center}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:13px}
+  /* auth gate */
+  #gate{position:absolute;inset:0;z-index:50;background:var(--bg);display:flex;flex-direction:column;padding:0 18px;overflow-y:auto}
+  #gate.hidden{display:none}
+  .gate-top{padding:26px 0 8px;display:flex;justify-content:center}
+  #gate-main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 0 40px}
+  #gate-main.anim{animation:rise .34s cubic-bezier(.2,.7,.2,1) both}
+  .gate-h{font-family:var(--fd);font-weight:700;font-size:28px;letter-spacing:-.035em;line-height:1.07;margin-bottom:7px}
+  .gate-sub{color:var(--muted);font-size:14.5px;line-height:1.5;margin-bottom:24px}
+  .gate-seg{display:flex;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:13px;padding:4px;gap:4px;margin-bottom:24px}
+  .gate-seg button{flex:1;font-family:var(--fb);font-weight:600;font-size:14px;color:var(--muted);background:none;border:none;padding:11px;border-radius:9px;cursor:pointer;transition:.16s}
+  .gate-seg button.on{background:var(--text);color:var(--ink)}
+  .gate-roles{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:15px}
+  .gate-role{padding:15px 14px;border:1.5px solid var(--line);border-radius:13px;background:var(--surface);cursor:pointer;transition:.15s}
+  .gate-role.on{border-color:var(--gold);background:var(--gold-soft)}
+  .gate-role b{font-size:14.5px;font-weight:600;display:block;margin-bottom:3px}
+  .gate-role span{font-size:12px;color:var(--muted);line-height:1.35}
+  .gate-role.on span{color:var(--gold-2)}
+  .gate-msg{border-radius:12px;padding:13px 15px;font-size:13.5px;line-height:1.5;margin-bottom:16px;display:none}
+  .gate-msg.show{display:block}
+  .gate-msg.err{background:rgba(224,135,106,.1);border:1px solid rgba(224,135,106,.3);color:#F0A88E}
+  .gate-msg.ok{background:rgba(127,208,164,.12);border:1px solid rgba(127,208,164,.3);color:#7FD0A4}
+  .gate-msg.info{background:var(--gold-soft);border:1px solid var(--gold-line);color:var(--gold-2)}
+  .gate-note{font-size:12px;color:var(--muted);line-height:1.55;margin-top:20px;text-align:center}
+  .gate-note a{color:var(--gold);cursor:pointer}
+  .spin{width:17px;height:17px;border:2px solid rgba(0,0,0,.25);border-top-color:var(--ink);border-radius:50%;animation:sp .6s linear infinite;display:inline-block}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .signout{color:var(--gold);font-weight:600;cursor:pointer}
+
+  /* ===== overlays: vetting + terms ===== */
+  #vet,#terms{position:absolute;inset:0;z-index:55;background:var(--bg);display:none;flex-direction:column;overflow:hidden}
+  #vet.show,#terms.show{display:flex}
+  @keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+
+  /* vetting */
+  #vet .vtop{background:linear-gradient(180deg,#101714,#0E1512);padding:15px 18px 13px;border-bottom:1px solid var(--line-2)}
+  #vet .vtop-row{display:flex;align-items:center;justify-content:space-between}
+  #vet .step-tag{font-family:var(--fm);font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  #vet .pbar{height:3px;background:var(--line-2);position:relative;overflow:hidden}
+  #vet .pbar span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-2));transition:width .4s cubic-bezier(.2,.7,.2,1)}
+  #vet-main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px 18px 30px}
+  #vet-main.anim{animation:rise .34s cubic-bezier(.2,.7,.2,1) both}
+  #vet .eyebrow{font-family:var(--fm);font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+  #vet h1{font-family:var(--fd);font-weight:700;font-size:29px;letter-spacing:-.035em;line-height:1.06;margin-bottom:9px}
+  #vet .sub{color:var(--muted);font-size:15px;line-height:1.55;margin-bottom:24px}
+  #vet .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px 20px;border-radius:14px;border:none;font-family:var(--fb);font-weight:700;font-size:15px;cursor:pointer;transition:transform .12s}
+  #vet .btn svg{width:18px;height:18px}
+  #vet .btn:active{transform:translateY(1px) scale(.995)}
+  #vet .btn:disabled{opacity:.4}
+  #vet .btn-gold{background:linear-gradient(180deg,var(--gold-2),var(--gold));color:var(--ink);box-shadow:0 6px 22px rgba(214,170,92,.28)}
+  #vet .btn-line{background:rgba(255,255,255,.025);color:var(--text);border:1px solid var(--line-3);font-weight:600}
+  #vet .vet{display:inline-flex;align-items:center;gap:5px;font-family:var(--fm);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);background:var(--gold-soft);border:1px solid var(--gold-line);padding:4px 11px 4px 8px;border-radius:30px}
+  #vet .vet svg{width:12px;height:12px}
+  #vet .note{font-size:12px;color:var(--muted);line-height:1.55;margin-top:16px}
+  #vet .hero-seal{width:84px;height:84px;margin:6px 0 22px;position:relative}
+  #vet .hero-seal .ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--gold-line)}
+  #vet .hero-seal .core{position:absolute;inset:14px;border-radius:50%;background:var(--gold-soft);display:flex;align-items:center;justify-content:center}
+  #vet .hero-seal svg{width:34px;height:34px;color:var(--gold)}
+  #vet .points{margin:6px 0 26px}
+  #vet .point{display:flex;gap:13px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line-2)}
+  #vet .point:last-child{border:none}
+  #vet .point .pn{flex:none;width:30px;height:30px;border-radius:9px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--gold)}
+  #vet .point .pn svg{width:16px;height:16px}
+  #vet .point .pt b{font-size:14.5px;font-weight:600;display:block;margin-bottom:3px}
+  #vet .point .pt span{font-size:13px;color:var(--muted);line-height:1.45}
+  #vet .track{display:flex;gap:14px;align-items:center;padding:17px;margin-bottom:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);cursor:pointer;transition:transform .14s}
+  #vet .track:active{transform:scale(.99)}
+  #vet .track.soon{opacity:.5;cursor:default}
+  #vet .track .ic{flex:none;width:46px;height:46px;border-radius:13px;background:linear-gradient(145deg,var(--gold),#c79a4e);display:flex;align-items:center;justify-content:center;color:var(--ink)}
+  #vet .track.soon .ic{background:var(--surface-2);color:var(--muted)}
+  #vet .track .ic svg{width:23px;height:23px}
+  #vet .track .tt b{font-size:16px;font-weight:600;display:block}
+  #vet .track .tt span{font-size:12.5px;color:var(--muted);margin-top:2px;display:block}
+  #vet .track .arrow{margin-left:auto;color:var(--muted-2)}
+  #vet .track .arrow svg{width:20px;height:20px}
+  #vet .badge-soon{margin-left:auto;font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-2);border:1px solid var(--line);padding:3px 8px;border-radius:20px}
+  #vet .qcount{font-family:var(--fm);font-size:12px;color:var(--gold);letter-spacing:.06em;margin-bottom:14px}
+  #vet .qtext{font-family:var(--fd);font-weight:600;font-size:22px;line-height:1.25;letter-spacing:-.02em;margin-bottom:22px}
+  #vet .opt{display:flex;gap:13px;align-items:center;padding:16px;margin-bottom:11px;background:var(--surface);border:1.5px solid var(--line);border-radius:var(--radius-sm);cursor:pointer;transition:.14s;font-size:14.5px;line-height:1.4}
+  #vet .opt:active{transform:scale(.99)}
+  #vet .opt.sel{border-color:var(--gold);background:var(--gold-soft)}
+  #vet .opt .box{flex:none;width:24px;height:24px;border-radius:7px;border:2px solid var(--line-3);display:flex;align-items:center;justify-content:center;transition:.14s}
+  #vet .opt.sel .box{background:var(--gold);border-color:var(--gold);color:var(--ink)}
+  #vet .opt .box svg{width:14px;height:14px;opacity:0;transition:.14s}
+  #vet .opt.sel .box svg{opacity:1}
+  #vet .opt .lab{flex:1}
+  #vet .seal{width:120px;height:120px;margin:14px auto 24px;position:relative;animation:pop .5s cubic-bezier(.2,1.3,.4,1) both}
+  #vet .seal .ring{position:absolute;inset:0;border-radius:50%;border:2.5px solid var(--gold-line)}
+  #vet .seal .ring2{position:absolute;inset:9px;border-radius:50%;border:1px solid var(--gold-line);opacity:.5}
+  #vet .seal .core{position:absolute;inset:22px;border-radius:50%;background:linear-gradient(160deg,var(--gold-2),var(--gold));display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px var(--gold-glow)}
+  #vet .seal.fail .core{background:var(--surface-2);box-shadow:none}
+  #vet .seal.fail .ring,#vet .seal.fail .ring2{border-color:var(--line-3)}
+  #vet .seal .core svg{width:50px;height:50px;color:var(--ink)}
+  #vet .seal.fail .core svg{color:var(--muted);width:42px;height:42px}
+  #vet .res-h{text-align:center;font-family:var(--fd);font-weight:700;font-size:27px;letter-spacing:-.03em;margin-bottom:8px}
+  #vet .res-sub{text-align:center;color:var(--muted);font-size:14.5px;line-height:1.55;margin-bottom:22px;padding:0 6px}
+  #vet .score-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center;margin-bottom:22px}
+  #vet .score-card .sv{font-family:var(--fm);font-size:32px;font-weight:600;letter-spacing:-.02em}
+  #vet .score-card .sl{font-size:12px;color:var(--muted);margin-top:4px;letter-spacing:.04em}
+  #vet .field{margin-bottom:17px}
+  #vet .field label{display:block;font-size:13px;font-weight:600;margin-bottom:8px}
+  #vet .field input,#vet .field textarea,#vet .field select{width:100%;padding:14px 15px;border:1px solid var(--line);border-radius:12px;font-family:var(--fb);font-size:15px;color:var(--text);background:var(--surface);outline:none;-webkit-appearance:none;transition:.15s}
+  #vet .field input::placeholder,#vet .field textarea::placeholder{color:var(--muted-2)}
+  #vet .field textarea{resize:none;line-height:1.5;min-height:80px}
+  #vet .field input:focus,#vet .field textarea:focus,#vet .field select:focus{border-color:var(--gold-line);box-shadow:0 0 0 3px var(--gold-soft)}
+  #vet .field .hint{font-size:12px;color:var(--muted);margin-top:7px;line-height:1.45}
+  #vet .field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23909C92' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:42px}
+  #vet .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  #vet .sec-title{font-family:var(--fm);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:26px 0 14px;display:flex;align-items:center;justify-content:space-between}
+  #vet .pkg-add{background:var(--bg-2);border:1px dashed var(--line-3);border-radius:16px;padding:16px;margin-bottom:14px}
+  #vet .pkg{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:11px;position:relative}
+  #vet .pkg .ph{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+  #vet .pkg .pname{font-size:15.5px;font-weight:600}
+  #vet .pkg .pprice{font-family:var(--fm);font-size:15px;font-weight:600;color:var(--gold);white-space:nowrap}
+  #vet .pkg .pprice small{color:var(--muted);font-weight:500}
+  #vet .pkg .pdesc{font-size:13px;color:var(--text-2);line-height:1.5;margin-bottom:8px}
+  #vet .pkg .pdel{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px}
+  #vet .pkg .pdel svg{width:13px;height:13px}
+  #vet .pkg .rm{position:absolute;top:13px;right:13px;width:26px;height:26px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  #vet .pkg .rm svg{width:14px;height:14px}
+  #vet .preview-note{font-family:var(--fm);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:14px}
+  #vet .pcard{background:var(--surface);border:1px solid var(--gold-line);border-radius:var(--radius);padding:18px;box-shadow:0 0 0 1px var(--gold-line),0 20px 50px rgba(0,0,0,.45)}
+  #vet .pc-top{display:flex;gap:13px;align-items:flex-start;margin-bottom:14px}
+  #vet .av{flex:none;width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-weight:700;font-size:19px;color:var(--ink);background:linear-gradient(145deg,var(--gold),#c79a4e)}
+  #vet .pc-name{display:flex;align-items:center;gap:7px;font-weight:600;font-size:16.5px}
+  #vet .pc-cat{font-size:12.5px;color:var(--gold);font-weight:600;margin-top:3px}
+  #vet .pc-head{font-size:13.5px;color:var(--text-2);line-height:1.45;margin-top:5px}
+  #vet .pc-meta{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);border-top:1px solid var(--line-2);padding-top:13px;margin-top:2px}
+  #vet .pc-meta .mono{font-family:var(--fm);color:var(--text);font-weight:600}
+  #vet .pc-pkgs{margin-top:14px;display:flex;flex-direction:column;gap:9px}
+  #vet .pc-pkg{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 13px;background:var(--bg-2);border:1px solid var(--line);border-radius:11px}
+  #vet .pc-pkg .n{font-size:13.5px;font-weight:600}
+  #vet .pc-pkg .n small{display:block;color:var(--muted);font-weight:400;font-size:11.5px;margin-top:2px}
+  #vet .pc-pkg .p{font-family:var(--fm);font-size:13.5px;font-weight:600;color:var(--gold);white-space:nowrap}
+  #vet .spacer{height:8px}
+  #vet .foot-cta{margin-top:22px}
+
+  /* terms */
+  #terms .ttop{position:sticky;top:0;background:rgba(14,21,18,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line-2);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:5}
+  #terms .ttoggle{display:flex;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+  #terms .ttoggle button{font-family:var(--fb);font-weight:600;font-size:12.5px;color:var(--muted);background:none;border:none;padding:7px 14px;border-radius:7px;cursor:pointer}
+  #terms .ttoggle button.on{background:var(--text);color:var(--ink)}
+  #terms .tclose{width:34px;height:34px;border-radius:10px;background:var(--surface);border:1px solid var(--line);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  #terms .tclose svg{width:18px;height:18px}
+  #terms-main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 20px 70px}
+  #terms .doc-h{font-family:var(--fd);font-weight:700;font-size:27px;letter-spacing:-.03em;margin-bottom:6px}
+  #terms .meta{font-family:var(--fm);font-size:11px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:22px}
+  #terms .intro{font-size:14.5px;color:var(--text-2);line-height:1.6;margin-bottom:26px;padding-bottom:22px;border-bottom:1px solid var(--line-2)}
+  #terms h2{font-family:var(--fd);font-weight:600;font-size:18px;letter-spacing:-.02em;margin:28px 0 11px;display:flex;gap:10px;align-items:baseline}
+  #terms h2 .n{font-family:var(--fm);font-size:12.5px;color:var(--gold);flex:none}
+  #terms h3{font-size:14px;font-weight:600;margin:16px 0 7px}
+  #terms p{font-size:14px;color:var(--text-2);line-height:1.6;margin-bottom:11px}
+  #terms ul{margin:0 0 12px;padding-left:2px;list-style:none}
+  #terms li{font-size:14px;color:var(--text-2);line-height:1.55;padding-left:18px;position:relative;margin-bottom:8px}
+  #terms li:before{content:"";position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:.7}
+  #terms strong{color:var(--text);font-weight:600}
+  #terms .ph{color:var(--gold);font-family:var(--fm);font-size:12.5px}
+  #terms .callout{background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:14px;margin:14px 0;font-size:13.5px;color:var(--gold-2);line-height:1.55}
+  #terms .caveat{display:flex;gap:11px;background:rgba(224,183,101,.1);border:1px solid var(--gold-line);border-radius:12px;padding:14px;margin-bottom:24px;font-size:13px;color:#E0B765;line-height:1.55}
+  #terms .caveat svg{width:20px;height:20px;flex:none;margin-top:1px}
+  #terms section{display:none}
+  #terms section.show{display:block}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top" id="top"></header>
+  <main id="main"></main>
+  <nav class="tabs" id="tabs"></nav>
+  <div id="gate"><div class="gate-top"><div class="brand"><span class="mk"></span>Pitched</div></div><div id="gate-main"></div></div>
+  <div id="vet">
+    <div class="vtop"><div class="vtop-row"><div class="brand"><span class="mk"></span>Pitched</div><div class="step-tag" id="vet-tag">Get vetted</div></div></div>
+    <div class="pbar"><span id="vet-bar" style="width:0%"></span></div>
+    <div id="vet-main"></div>
+  </div>
+  <div id="terms">
+    <div class="ttop">
+      <div class="ttoggle"><button id="tm-t" class="on" onclick="termsShow('terms')">Terms</button><button id="tm-p" onclick="termsShow('privacy')">Privacy</button></div>
+      <div class="tclose" onclick="closeTerms()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+    </div>
+    <div id="terms-main"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================ ICONS ============================ */
+const I={
+  back:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  wallet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2.5"/><path d="M3 10.5h18"/></svg>',
+  swipe:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6L5 10l4 4"/><path d="M15 6l4 4-4 4"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+  star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.8 5.9 21.4l1.4-6.8L2.2 9.9l6.9-.8L12 2z"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.5-7-11a7 7 0 0114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+  bolt:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L4.5 13.5H11l-1 8.5L19.5 10H13l0-8z"/></svg>',
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>',
+  grid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
+  feed:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h11"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/></svg>',
+  chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 01-9 8.34 9.4 9.4 0 01-4-.9L3 21l1.9-5a8.5 8.5 0 01-.9-4 8.38 8.38 0 018.5-8.5 8.48 8.48 0 018.5 8.5z"/></svg>',
+  inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5 6l-3 6v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3-6H5z"/></svg>'
+};
+const star=(s='13px',c='var(--gold)')=>I.star.replace('<svg',`<svg style="width:${s};height:${s};color:${c};vertical-align:-2px"`);
+
+/* ============================ DATA ============================ */
+const CATS=["Paid ads / media buying","Closers & setters","Email & CRM","Copywriting","Funnels & web","SEO","Organic social","Creative / UGC","AI automation"];
+const PAL=["#D6AA5C","#C8A24F","#B89B6A","#CDB079","#D2A85A","#BFA15E","#C9A24B","#D8B86E","#C4A05A"];
+function col(s){let h=0;for(let i=0;i<s.length;i++)h=s.charCodeAt(i)+((h<<5)-h);return PAL[Math.abs(h)%PAL.length];}
+function initials(n){return n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();}
+
+const providers=[
+  {id:'p0',name:'Northbound Media',you:true,cat:'Paid ads / media buying',verified:true,rating:4.9,reviews:27,loc:'London',from:'£1,500/mo',resp:'Replies in ~1h',
+   head:'Meta & Google ads for coaching, info products and DTC.',
+   bio:'Boutique media-buying studio. We run paid acquisition for high-ticket coaching and info offers — heavy on creative testing, clean tracking and weekly reporting you can actually read. Small client list, hands-on.',
+   svc:['Meta Ads','Google Ads','Creative testing','Tracking & attribution','Weekly reporting'],
+   revs:[{who:'Coaching brand',stars:5,txt:'Properly organised and communicative. Reporting every Friday without fail and the creative was sharp.'},{who:'Course creator',stars:5,txt:'Took the time to understand the offer before touching anything. Felt like a partner, not a contractor.'}]},
+  {id:'p1',name:'Apex Performance',cat:'Paid ads / media buying',verified:true,rating:4.8,reviews:41,loc:'Manchester',from:'£2,000/mo',resp:'Replies in ~2h',
+   head:'Full-funnel paid social for high-ticket offers.',
+   bio:'Performance team focused on high-ticket coaching and services. Creative-led testing, landing-page feedback and a structured 30-day onboarding.',
+   svc:['Meta Ads','Creative strategy','Landing pages','Funnel review'],
+   revs:[{who:'Consultant',stars:5,txt:'Clear plan from day one and stuck to it. Easy to work with.'},{who:'Agency owner',stars:4,txt:'Good communication, sharp on creative angles.'}]},
+  {id:'p10',name:'Loop Growth',cat:'Paid ads / media buying',verified:false,rating:4.7,reviews:12,loc:'Remote',from:'£1,200/mo',resp:'Replies same day',
+   head:'Performance creative + media buying for DTC brands.',
+   bio:'Creative-first growth shop. We pair UGC-style ad creative with disciplined media buying for ecommerce and DTC.',
+   svc:['Meta Ads','TikTok Ads','Ad creative','UGC sourcing'],
+   revs:[{who:'DTC founder',stars:5,txt:'Fast, responsive and genuinely creative with the angles.'}]},
+  {id:'p2',name:'Frontline Setting',cat:'Closers & setters',verified:true,rating:4.9,reviews:33,loc:'Remote',from:'£3,000/mo',resp:'Replies in ~1h',
+   head:'Outbound appointment setting & SDR teams for coaching programmes.',
+   bio:'Trained UK & EU setters for high-ticket coaching and consulting. We handle inbound DMs and warm-list outreach, book qualified calls and keep your CRM tidy.',
+   svc:['Appointment setting','Inbound DM management','CRM hygiene','SDR training'],
+   revs:[{who:'High-ticket coach',stars:5,txt:'Booked our calendar out properly and the setters were on-brand. Daily updates.'},{who:'Programme owner',stars:5,txt:'Reliable and well-managed team. CRM was spotless.'}]},
+  {id:'p3',name:'Retention Lab',cat:'Email & CRM',verified:true,rating:4.8,reviews:19,loc:'Leeds',from:'£900/mo',resp:'Replies same day',
+   head:'Klaviyo email & SMS flows for ecommerce and info.',
+   bio:'Lifecycle and retention specialists. Flows, campaigns and segmentation built to keep customers engaged.',
+   svc:['Klaviyo','Email flows','SMS','Segmentation'],
+   revs:[{who:'Shop owner',stars:5,txt:'Flows were well thought through and the copy matched our brand voice nicely.'}]},
+  {id:'p4',name:'Sharp Copy',cat:'Copywriting',verified:false,rating:4.9,reviews:22,loc:'Bristol',from:'£750/project',resp:'Replies in ~3h',
+   head:'Direct-response VSLs, emails and sales pages.',
+   bio:'Direct-response copywriter for coaches and course creators. Research-led, conversion-focused, plain-spoken.',
+   svc:['VSL scripts','Sales pages','Email sequences','Ad copy'],
+   revs:[{who:'Course creator',stars:5,txt:'Asked brilliant questions and the first draft was already close. Real craft.'}]},
+  {id:'p5',name:'Build & Convert',cat:'Funnels & web',verified:true,rating:4.7,reviews:15,loc:'Remote',from:'£1,000/project',resp:'Replies same day',
+   head:'GoHighLevel funnels, sites and automations.',
+   bio:'We build and wire up funnels end to end — pages, forms, pipelines and automations in GoHighLevel or your stack of choice.',
+   svc:['GoHighLevel','Funnel builds','Web design','Automations'],
+   revs:[{who:'Coach',stars:5,txt:'Turned a messy idea into a clean funnel quickly. Handover docs were great.'}]},
+  {id:'p6',name:'Rank Theory',cat:'SEO',verified:false,rating:4.6,reviews:9,loc:'Edinburgh',from:'£1,100/mo',resp:'Replies in ~4h',
+   head:'Programmatic & content SEO for B2B and SaaS.',
+   bio:'Technical and content SEO for B2B brands that want compounding organic traffic.',
+   svc:['Technical SEO','Content strategy','Link building'],
+   revs:[{who:'SaaS marketer',stars:5,txt:'Methodical and transparent. No black-box nonsense.'}]},
+  {id:'p7',name:'Daily Reach',cat:'Organic social',verified:false,rating:4.7,reviews:14,loc:'London',from:'£800/mo',resp:'Replies same day',
+   head:'Short-form content systems for founders.',
+   bio:'We turn founders into consistent short-form creators — hooks, scripting, editing and a repeatable posting system.',
+   svc:['Short-form editing','Content strategy','Hook writing'],
+   revs:[{who:'Founder',stars:5,txt:'Made posting consistently actually doable. Edits were punchy.'}]},
+  {id:'p8',name:'Frame UGC',cat:'Creative / UGC',verified:true,rating:4.8,reviews:18,loc:'Remote',from:'£600/project',resp:'Replies in ~2h',
+   head:'UGC creators & ad creative for paid social.',
+   bio:'A vetted roster of UGC creators plus editing. We produce ad-ready creative for performance campaigns.',
+   svc:['UGC creators','Ad creative','Editing','Scripting'],
+   revs:[{who:'Media buyer',stars:5,txt:'Quick turnaround and the creators understood direct-response, not just pretty footage.'}]},
+  {id:'p9',name:'Switch Automations',cat:'AI automation',verified:false,rating:4.6,reviews:7,loc:'Remote',from:'£1,400/project',resp:'Replies in ~5h',
+   head:'AI workflows & internal tools for lean teams.',
+   bio:'We build practical AI automations — lead routing, content ops, internal tools — for small teams that want leverage.',
+   svc:['AI workflows','Internal tools','Lead routing','Integrations'],
+   revs:[{who:'Agency owner',stars:5,txt:'Saved our ops team hours a week. Pragmatic, not hype.'}]}
+];
+function P(id){return providers.find(p=>p.id===id);}
+const SPOTLIGHT='p2';
+
+let briefs=[
+  {id:'b1',buyer:'You',mine:true,cat:'Paid ads / media buying',status:'open',
+   title:'Media buyer to scale Meta ads for a coaching offer',
+   desc:"We've a proven high-ticket coaching offer converting well organically and want to scale Meta ads profitably. Need someone strong on creative testing and weekly reporting — we'll provide raw assets and access.",
+   budget:'£2,000–4,000/mo',timeline:'Within 2 weeks',
+   pitches:[
+     {pid:'p1',quote:'£2,200/mo',time:'5 days',msg:"We'd open with a 30-day creative testing sprint — 3 angles, 9 variations — then scale the winners. You'd get a Friday reporting loom and a shared dashboard. Happy to review your funnel first."},
+     {pid:'p10',quote:'£1,800/mo',time:'3 days',msg:"We can move fast. We'll repurpose your organic winners into ad creative, launch a lean testing structure and iterate weekly. Best fit if you want creative volume."},
+     {pid:'p5',quote:'£1,500+ads',time:'7 days',msg:"Different angle — before scaling spend we'd tighten the funnel and tracking so the ads land somewhere clean, then run the buying. Best if the funnel needs work too."}
+   ]},
+  {id:'b2',buyer:'You',mine:true,cat:'Closers & setters',status:'open',
+   title:'Appointment setting team for a high-ticket coaching programme',
+   desc:'Looking for a setting team to book qualified calls from our inbound DMs and warm lists. Daily volume, on-brand tone and tidy CRM hygiene matter. Programme is established with a clear ICP.',
+   budget:'£3,000–6,000/mo +per call',timeline:'ASAP',
+   pitches:[]}
+];
+function B(id){return briefs.find(b=>b.id===id);}
+
+let threads=[
+  {id:'t1',side:'buyer',withId:'p1',sub:'Re: Media buyer to scale Meta ads',
+   msgs:[{from:'them',txt:'Thanks for the brief — happy to share a quick plan for the first 30 days.'},{from:'you',txt:'Great. What would the creative testing actually look like week one?'},{from:'them',txt:'3 angles, 3 variations each. We lock tracking first, launch Tuesday, first read by Friday.'}]},
+  {id:'t2',side:'provider',withName:'Jordan — Buyer',sub:'Enquiry about your profile',
+   msgs:[{from:'them',txt:'Saw your profile — do you work with health & wellness offers?'},{from:'you',txt:'We do, a few. Happy to share a couple of examples on a quick call.'}]}
+];
+function T(id){return threads.find(t=>t.id===id);}
+
+/* ============================ STATE ============================ */
+const state={role:'buyer',tab:'home',stack:[],find:{q:'',cat:'All'},feed:{cat:'All'},tokens:3,billing:{card:null,auto:false}};
+const COIN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M9.5 9.5h3.2a1.8 1.8 0 010 3.6H9.8h3a1.8 1.8 0 010 3.4"/></svg>';
+const TABS={
+  buyer:[{k:'home',label:'Home',icon:'home'},{k:'find',label:'Find',icon:'grid'},{k:'messages',label:'Messages',icon:'chat'}],
+  provider:[{k:'feed',label:'Briefs',icon:'feed'},{k:'pitches',label:'My pitches',icon:'doc'},{k:'messages',label:'Messages',icon:'chat'}]
+};
+function push(s){state.stack.push(s);render();scrollTop();}
+function pop(){state.stack.pop();render();}
+function go(tab){state.tab=tab;state.stack=[];render();scrollTop();}
+function setRole(r){state.role=r;state.stack=[];state.tab=r==='buyer'?'home':'feed';render();scrollTop();}
+function scrollTop(){const m=document.getElementById('main');if(m)m.scrollTop=0;}
+function avatar(name){return `<div class="av" style="background:linear-gradient(145deg,${col(name)},${col(name)}cc)">${initials(name)}</div>`;}
+function vmark(p){return p.verified?`<span class="vet">${I.check}Vetted</span>`:'';}
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2300);}
+
+/* ============================ SHELL ============================ */
+function render(){
+  renderTop();renderTabs();
+  const m=document.getElementById('main');
+  let html;
+  if(state.stack.length)html=renderStackTop();
+  else if(state.role==='buyer')html=({home:buyerHome,find:buyerFind,messages:messagesList})[state.tab]();
+  else html=({feed:providerFeed,pitches:providerPitches,messages:messagesList})[state.tab]();
+  m.innerHTML=html;
+  m.classList.remove('anim');void m.offsetWidth;m.classList.add('anim');
+  const top=state.stack[state.stack.length-1];
+  const tabsEl=document.getElementById('tabs');
+  if(top&&top.s==='thread'){tabsEl.style.display='none';const mb=document.getElementById('msg-scroll');if(mb)mb.scrollTop=mb.scrollHeight;}
+  else tabsEl.style.display='flex';
+}
+function renderTop(){
+  const sub=state.role==='buyer'?`<span class="live"></span>Browsing as a <b>buyer</b>`:`<span class="live"></span>Listed as a <b>provider</b> · <b>${state.tokens}</b> tokens`;
+  document.getElementById('top').innerHTML=`
+    <div class="top-row">
+      <div class="brand"><span class="mk"></span>Pitched</div>
+      <div class="seg">
+        <button class="${state.role==='buyer'?'on':''}" onclick="setRole('buyer')">Buyer</button>
+        <button class="${state.role==='provider'?'on':''}" onclick="setRole('provider')">Provider</button>
+      </div>
+    </div>
+    <div class="ctx">${sub}${gUser?` · <a class="signout" onclick="doLogout()">Sign out</a>`:''}</div>`;
+}
+function renderTabs(){
+  const set=TABS[state.role];
+  const unread=threads.filter(t=>t.side===state.role).length;
+  document.getElementById('tabs').innerHTML=set.map(t=>{
+    const on=state.stack.length===0&&state.tab===t.k;
+    const ic=(t.k==='messages')?`<span class="tb" data-n="${unread}">${I[t.icon]}</span>`:I[t.icon];
+    return `<button class="${on?'on':''}" onclick="go('${t.k}')">${ic}<span>${t.label}</span></button>`;
+  }).join('');
+}
+function renderStackTop(){
+  const s=state.stack[state.stack.length-1];
+  return {provider:screenProvider,brief:screenBrief,postBrief:screenPostBrief,pitchForm:screenPitchForm,thread:screenThread,briefView:screenBriefView,topup:screenTopup,billing:screenBilling}[s.s](s);
+}
+function backBar(l){return `<div class="stack-head"><button class="back" onclick="pop()">${I.back}${l||'Back'}</button></div>`;}
+function emptyBlock(big,sub){return `<div class="empty"><div class="ic">${I.inbox}</div><div class="big">${big}</div><p>${sub}</p></div>`;}
+
+/* ============================ BUYER HOME ============================ */
+function buyerHome(){
+  const mine=briefs.filter(b=>b.mine);
+  const sp=P(SPOTLIGHT);
+  const av=['p2','p1','p8','p0'].map(id=>avatar(P(id).name)).join('');
+  return `
+    <div class="hero">
+      <h2>Brief it.<br>Get pitched by<br><span class="g">vetted operators.</span></h2>
+      <p>Post what you need. Vetted specialists come to you — then compare their pitches side by side and pick the one that fits.</p>
+      <div class="supply"><div class="stackav">${av}</div><div class="txt"><b>11 vetted operators</b><br>3 joined this week</div></div>
+      <button class="btn btn-gold" onclick="push({s:'postBrief'})">${I.plus}Post a brief</button>
+    </div>
+    <div class="vetnote">${I.shield}<div>Every operator is vetted before they can pitch. We check the work and the track record — not just the words.</div></div>
+
+    <div class="spot" onclick="push({s:'provider',id:'${sp.id}'})">
+      <div class="spot-label">${I.bolt}Spotlight this week</div>
+      <div class="pc-top" style="margin-bottom:13px">${avatar(sp.name)}
+        <div style="flex:1;min-width:0"><div class="pc-name">${sp.name} ${vmark(sp)}</div><div class="pc-cat">${sp.cat}</div><div class="pc-head">${sp.head}</div></div>
+      </div>
+      <div class="pc-meta" style="border-color:var(--gold-line)">
+        <span>${star('13px')} <span class="mono">${sp.rating}</span></span><span class="sep"></span>
+        <span class="rt">${I.clock}${sp.resp}</span><span class="from">${sp.from}</span>
+      </div>
+    </div>
+
+    <div class="eyebrow">Your briefs</div>
+    ${mine.length?mine.map(briefCardBuyer).join(''):emptyBlock('No briefs yet','Post your first brief to start receiving pitches.')}
+    <button class="btn btn-line" style="margin-top:6px" onclick="go('find')">Browse operators yourself →</button>
+    <div class="note">Demo build · data resets on refresh. Switch to <b>Provider</b> (top right) to pitch a brief, then back to Buyer to watch it land.</div>
+  `;
+}
+function briefCardBuyer(b){
+  const n=b.pitches.length;
+  return `<div class="card brief" onclick="push({s:'brief',id:'${b.id}'})">
+    <div class="brief-top"><span class="badge badge-cat">${b.cat}</span><span class="badge badge-open">Open</span></div>
+    <h3>${b.title}</h3><div class="brief-desc">${b.desc}</div>
+    <div class="brief-foot"><span class="pill">${I.wallet}<span class="mono">${b.budget}</span></span>
+      <span class="pcount">${n} pitch${n===1?'':'es'} ${n?'→':''}</span></div>
+  </div>`;
+}
+
+/* ============================ BUYER FIND ============================ */
+function buyerFind(){
+  return `
+    <div class="eyebrow">The roster</div>
+    <h1 class="screen">Find operators</h1>
+    <div class="sub">Vetted specialists across the online-business space.</div>
+    <div class="search">${I.search}<input id="find-q" placeholder="Search by name or service…" value="${state.find.q}" oninput="onFindInput(this.value)"></div>
+    <div class="chips">${['All',...CATS].map(c=>`<div class="chip ${state.find.cat===c?'on':''}" onclick="setFindCat('${c.replace(/'/g,"\\'")}')">${c}</div>`).join('')}</div>
+    <div id="find-results">${renderProviderResults()}</div>`;
+}
+function onFindInput(v){state.find.q=v;document.getElementById('find-results').innerHTML=renderProviderResults();}
+function setFindCat(c){state.find.cat=c;document.getElementById('find-results').innerHTML=renderProviderResults();document.querySelectorAll('.chips .chip').forEach(ch=>ch.classList.toggle('on',ch.textContent.trim()===c));}
+function renderProviderResults(){
+  const{q,cat}=state.find;let list=providers.slice();
+  if(cat!=='All')list=list.filter(p=>p.cat===cat);
+  if(q.trim()){const t=q.toLowerCase();list=list.filter(p=>p.name.toLowerCase().includes(t)||p.head.toLowerCase().includes(t)||p.svc.join(' ').toLowerCase().includes(t)||p.cat.toLowerCase().includes(t));}
+  list.sort((a,b)=>(b.verified-a.verified)||(b.rating-a.rating));
+  if(!list.length)return emptyBlock('No matches','Try a different category or search term.');
+  return list.map(providerCard).join('');
+}
+function providerCard(p){
+  return `<div class="card pcard" onclick="push({s:'provider',id:'${p.id}'})">
+    <div class="pc-top">${avatar(p.name)}
+      <div style="flex:1;min-width:0"><div class="pc-name">${p.name} ${vmark(p)}</div><div class="pc-cat">${p.cat}</div><div class="pc-head">${p.head}</div></div>
+    </div>
+    <div class="pc-meta">
+      <span>${star('13px')} <span class="mono">${p.rating}</span></span><span class="sep"></span>
+      <span>${p.reviews} reviews</span><span class="sep"></span><span class="rt">${I.clock}${p.resp}</span>
+      <span class="from">${p.from}</span>
+    </div>
+  </div>`;
+}
+
+/* ============================ PROFILE ============================ */
+function screenProvider(s){
+  const p=P(s.id);
+  return `${backBar('Roster')}
+    <div class="prof-hd">${avatar(p.name)}<div><div class="prof-name">${p.name} ${vmark(p)}</div><div class="prof-cat">${p.cat}</div></div></div>
+    <div class="stat-row">
+      <div class="stat"><div class="v">${p.rating}</div><div class="l">RATING</div></div>
+      <div class="stat"><div class="v">${p.reviews}</div><div class="l">REVIEWS</div></div>
+      <div class="stat"><div class="v" style="font-size:14px">${p.from.split('/')[0]}</div><div class="l">FROM</div></div>
+    </div>
+    <div class="pmeta">${I.pin}${p.loc}</div>
+    <div class="pmeta">${I.clock}${p.resp}</div>
+    <div class="sec-title">About</div><div class="body-txt">${p.bio}</div>
+    <div class="sec-title">Services</div><div class="svc-list">${p.svc.map(s=>`<span class="svc">${s}</span>`).join('')}</div>
+    <div class="sec-title">Reviews</div>
+    ${p.revs.map(r=>`<div class="review"><div class="rv-top"><span class="rv-who">${r.who}</span><span class="rv-stars">${'★'.repeat(r.stars)}</span></div><div class="rv-txt">"${r.txt}"</div></div>`).join('')}
+    <div style="height:82px"></div>
+    <div class="sticky-cta"><button class="btn btn-gold" onclick="requestPitch('${p.id}')">${I.send}Request a pitch from ${p.name.split(' ')[0]}</button></div>`;
+}
+function requestPitch(pid){push({s:'postBrief',invite:pid});}
+
+/* ============================ POST BRIEF ============================ */
+function screenPostBrief(s){
+  const invite=s.invite?P(s.invite):null;
+  return `${backBar('Back')}
+    <div class="eyebrow">New brief</div>
+    <h1 class="screen">What do you need?</h1>
+    <div class="sub">${invite?`Inviting <b style="color:var(--text)">${invite.name}</b> to pitch — we'll match other vetted operators too.`:'Describe it once. Matched, vetted operators will pitch you.'}</div>
+    <div class="field"><label>Service</label><select id="nb-cat">${CATS.map(c=>`<option ${invite&&invite.cat===c?'selected':''}>${c}</option>`).join('')}</select></div>
+    <div class="field"><label>Title</label><input id="nb-title" placeholder="e.g. Media buyer to scale Meta ads"></div>
+    <div class="field"><label>The brief</label><textarea id="nb-desc" placeholder="What's the offer, the goal, what success looks like, and what you'll provide?"></textarea></div>
+    <div class="row2"><div class="field"><label>Budget</label><input id="nb-budget" placeholder="£2,000–4,000/mo"></div><div class="field"><label>Timeline</label><input id="nb-time" placeholder="Within 2 weeks"></div></div>
+    <div class="field hint" style="margin:-4px 0 16px">Reviewed against our quality bar before it goes live. The sharper the brief, the better the pitches.</div>
+    <button class="btn btn-gold" onclick="submitBrief('${s.invite||''}')">${I.check}Post brief</button><div style="height:22px"></div>`;
+}
+function submitBrief(inviteId){
+  const cat=document.getElementById('nb-cat').value,title=document.getElementById('nb-title').value.trim(),desc=document.getElementById('nb-desc').value.trim();
+  const budget=document.getElementById('nb-budget').value.trim()||'Flexible',time=document.getElementById('nb-time').value.trim()||'Flexible';
+  if(!title){toast('Add a title for your brief');return;}
+  if(!desc){toast('Add a short brief');return;}
+  const pitches=[];
+  if(inviteId){const p=P(inviteId);pitches.push({pid:inviteId,quote:p.from,time:'Awaiting',msg:`${p.name} has been invited to pitch and will respond shortly.`,invited:true});}
+  briefs.unshift({id:'b'+Date.now(),buyer:'You',mine:true,cat,status:'open',title,desc,budget,timeline:time,pitches});
+  state.stack=[];state.tab='home';render();scrollTop();
+  toast(inviteId?'Brief posted & invite sent':'Brief posted — matching operators');
+}
+
+/* ============================ BRIEF (buyer) + COMPARE ============================ */
+function screenBrief(s){
+  const b=B(s.id),n=b.pitches.length;
+  return `${backBar('Home')}
+    <span class="badge badge-cat">${b.cat}</span>
+    <h1 class="screen" style="margin-top:12px">${b.title}</h1>
+    <div class="brief-foot" style="border:none;padding:8px 0 16px">
+      <span class="pill">${I.wallet}<span class="mono">${b.budget}</span></span><span class="sep"></span><span class="pill">${I.clock}<span class="mono">${b.timeline}</span></span></div>
+    <div class="body-txt" style="margin-bottom:6px">${b.desc}</div>
+    <div class="divider"></div>
+    <div class="compare-intro"><div class="eyebrow" style="margin:0">${n} pitch${n===1?'':'es'} in</div>${n>1?`<div class="compare-hint">${I.swipe}Swipe to compare</div>`:''}</div>
+    ${n?`<div class="scroller">${b.pitches.map((pt,i)=>pitchCard(pt,b,i)).join('')}</div>
+      <div class="note">Like-for-like, side by side. Open a chat with whoever fits — you choose who to work with.</div>`
+     :emptyBlock('No pitches yet','Vetted operators are being matched. Pitches usually land within a day.')}`;
+}
+function pitchCard(pt,b,i){
+  const p=P(pt.pid),fit=i===0&&b.pitches.length>1&&!pt.invited;
+  return `<div class="pitch ${fit?'fit':''}">
+    ${fit?'<div class="fit-tag">Closest fit</div>':''}
+    <div class="pitch-hd">${avatar(p.name)}
+      <div style="min-width:0"><div class="pitch-name">${p.name.split(' ')[0]} ${p.you?'<span class="tag-you">You</span>':vmark(p)}</div>
+        <div class="pitch-rate">${star('11px')} ${p.rating} · ${p.reviews} reviews</div></div></div>
+    <div class="pitch-spec"><div class="s"><div class="sl">Quote</div><div class="sv">${pt.quote}</div></div><div class="s"><div class="sl">Start</div><div class="sv">${pt.time}</div></div></div>
+    <div class="pitch-body">${pt.msg}</div>
+    <div class="pitch-foot">
+      ${pt.invited?`<button class="btn btn-line btn-sm" style="flex:1" onclick="push({s:'provider',id:'${p.id}'})">View profile</button>`
+       :`<button class="btn btn-line btn-sm" style="flex:1" onclick="push({s:'provider',id:'${p.id}'})">Profile</button>
+         <button class="btn btn-light btn-sm" style="flex:1" onclick="openChatWith('${p.id}','${b.title.replace(/'/g,'')}')">Message</button>`}
+    </div></div>`;
+}
+function openChatWith(pid,subj){
+  let t=threads.find(x=>x.side==='buyer'&&x.withId===pid);
+  if(!t){t={id:'t'+Date.now(),side:'buyer',withId:pid,sub:'Re: '+subj,msgs:[]};threads.unshift(t);}
+  push({s:'thread',id:t.id});
+}
+
+/* ============================ PROVIDER FEED ============================ */
+function providerFeed(){
+  const me=P('p0');
+  return `
+    <div class="completeness">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14.5px">${me.name}</b>${vmark(me)}</div>
+      <div class="cbar"><span style="width:90%"></span></div>
+      <div style="font-size:12.5px;color:var(--muted)">Profile 90% complete · <span style="color:var(--gold);font-weight:600" onclick="push({s:'provider',id:'p0'})">View your profile →</span></div>
+    </div>
+    <div class="tokbal">
+      <div class="coin">${COIN}</div>
+      <div><div class="tb-n">${state.tokens}</div><div class="tb-l">pitch tokens · 1 per pitch</div></div>
+      <button class="btn btn-line btn-sm tb-btn" onclick="push({s:'topup'})">Top up</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:-9px 2px 19px">
+      <span style="font-size:12px;color:var(--muted)">${state.billing.card?`Card on file · ${state.billing.card.brand} ••${state.billing.card.last4}`:'No payment method saved'}</span>
+      <span style="font-size:12px;color:var(--gold);font-weight:600" onclick="push({s:'billing'})">${state.billing.card?'Manage':'Add card'} →</span>
+    </div>
+    <div class="eyebrow">Live demand</div>
+    <h1 class="screen">Open briefs</h1>
+    <div class="sub">Buyers looking for what you do. Pitch the ones that fit.</div>
+    <div class="chips">${['All',...CATS].map(c=>`<div class="chip ${state.feed.cat===c?'on':''}" onclick="setFeedCat('${c.replace(/'/g,"\\'")}')">${c}</div>`).join('')}</div>
+    <div id="feed-results">${renderFeedResults()}</div>`;
+}
+function setFeedCat(c){state.feed.cat=c;document.getElementById('feed-results').innerHTML=renderFeedResults();document.querySelectorAll('.chips .chip').forEach(ch=>ch.classList.toggle('on',ch.textContent.trim()===c));}
+function renderFeedResults(){
+  let list=briefs.filter(b=>b.status==='open');
+  if(state.feed.cat!=='All')list=list.filter(b=>b.cat===state.feed.cat);
+  if(!list.length)return emptyBlock('No open briefs here','Try another category — new briefs come in daily.');
+  return list.map(briefCardProvider).join('');
+}
+function briefCardProvider(b){
+  const me=P('p0'),pitched=b.pitches.some(pt=>pt.pid==='p0'),match=b.cat===me.cat;
+  return `<div class="card brief" onclick="push({s:'briefView',id:'${b.id}'})">
+    <div class="brief-top"><span class="badge badge-cat">${b.cat}</span>${match?'<span class="badge badge-match">Matches you</span>':''}</div>
+    <h3>${b.title}</h3><div class="brief-desc">${b.desc}</div>
+    <div class="brief-foot"><span class="pill">${I.wallet}<span class="mono">${b.budget}</span></span><span class="sep"></span><span class="pill">${I.clock}<span class="mono">${b.timeline}</span></span>
+      ${pitched?`<span class="pcount green">${I.check.replace('<svg','<svg style="width:12px;height:12px"')} Pitched</span>`:''}</div>
+  </div>`;
+}
+
+/* ============================ BRIEF (provider) + PITCH ============================ */
+function screenBriefView(s){
+  const b=B(s.id),pitched=b.pitches.some(pt=>pt.pid==='p0');
+  return `${backBar('Briefs')}
+    <span class="badge badge-cat">${b.cat}</span>
+    <h1 class="screen" style="margin-top:12px">${b.title}</h1>
+    <div class="brief-foot" style="border:none;padding:8px 0 16px"><span class="pill">${I.wallet}<span class="mono">${b.budget}</span></span><span class="sep"></span><span class="pill">${I.clock}<span class="mono">${b.timeline}</span></span></div>
+    <div class="body-txt" style="margin-bottom:16px">${b.desc}</div>
+    <div class="card pad" style="margin-bottom:14px"><div style="font-size:12.5px;color:var(--muted);line-height:1.5">Posted by a vetted buyer · ${b.pitches.length} operator${b.pitches.length===1?'':'s'} pitched so far</div></div>
+    <div style="height:96px"></div>
+    <div class="sticky-cta">${pitched
+      ? `<button class="btn btn-line" disabled>${I.check}You've pitched this brief</button>`
+      : state.tokens>=1
+        ? `<button class="btn btn-gold" onclick="push({s:'pitchForm',id:'${b.id}'})">${I.send}Submit a pitch · 1 token</button><div class="note" style="text-align:center;margin-top:9px">Balance: ${state.tokens} tokens · refunded if the brief is pulled or never engages</div>`
+        : `<button class="btn btn-gold" onclick="push({s:'topup'})">Get tokens to pitch</button><div class="note" style="text-align:center;margin-top:9px">You're out of tokens. Top up to pitch this brief.</div>`}</div>`;
+}
+function screenPitchForm(s){
+  const b=B(s.id);
+  return `${backBar('Back')}
+    <div class="eyebrow">Your pitch</div>
+    <h1 class="screen">Make your case</h1>
+    <div class="sub">Pitching: <b style="color:var(--text)">${b.title}</b></div>
+    <div class="row2"><div class="field"><label>Your quote</label><input id="pt-quote" placeholder="£2,000/mo"></div><div class="field"><label>You can start</label><input id="pt-time" placeholder="In 5 days"></div></div>
+    <div class="field"><label>Your pitch</label><textarea id="pt-msg" placeholder="Why you're a fit, how you'd approach the first 30 days, and what you'd need from them."></textarea>
+      <div class="hint">Specific beats salesy. Buyers compare pitches side by side — make yours easy to say yes to.</div></div>
+    <div class="costnote">${COIN}Sending this pitch uses <b style="font-family:var(--fm);margin:0 2px">1 token</b> · you have ${state.tokens}.</div>
+    <button class="btn btn-gold" onclick="submitPitch('${b.id}')">${I.send}Send pitch · 1 token</button><div style="height:22px"></div>`;
+}
+function submitPitch(bid){
+  const b=B(bid),quote=document.getElementById('pt-quote').value.trim()||'On request',time=document.getElementById('pt-time').value.trim()||'Flexible',msg=document.getElementById('pt-msg').value.trim();
+  if(!msg){toast('Write a short pitch first');return;}
+  if(state.tokens<1){toast('Out of tokens — top up to pitch');state.stack=[{s:'topup'}];render();scrollTop();return;}
+  state.tokens-=1;
+  b.pitches.push({pid:'p0',quote,time,msg});
+  state.stack=[];state.tab='pitches';render();scrollTop();
+  toast(`Pitch sent · 1 token used · ${state.tokens} left`);
+}
+
+/* ============================ TOKENS / TOP-UP ============================ */
+const PACKS=[
+  {n:5,price:25,per:'£5.00',tag:''},
+  {n:15,price:60,per:'£4.00',tag:'Popular'},
+  {n:40,price:140,per:'£3.50',tag:'Best value'}
+];
+function screenTopup(){
+  const c=state.billing.card;
+  return `${backBar('Back')}
+    <div class="eyebrow">Top up</div>
+    <h1 class="screen">Pitch tokens</h1>
+    <div class="sub">One token per pitch. You only spend when you choose to pitch a brief — buyers are never charged.</div>
+    <div class="tokbal"><div class="coin">${COIN}</div><div><div class="tb-n">${state.tokens}</div><div class="tb-l">current balance</div></div></div>
+    ${c?`<div class="savedcard" style="margin-bottom:16px"><div class="cbrand">${c.brand}</div><div><div class="cnum">•••• ${c.last4}</div><div class="cexp">Default payment method</div></div><div class="crm" onclick="push({s:'billing'})">Manage</div></div>`
+       :`<button class="btn btn-line" style="margin-bottom:16px" onclick="push({s:'billing'})">${I.shield}Add a payment method</button>`}
+    ${PACKS.map((p,i)=>`<div class="pack ${p.tag?'pop':''}" onclick="buyTokens(${i})">
+      ${p.tag?`<span class="poptag">${p.tag}</span>`:''}
+      <div class="pq">${p.n}<small>tokens</small></div>
+      <div><div class="pp">£${p.price}</div><div class="pe">${p.per} per pitch</div></div>
+      <div class="pget">Buy</div>
+    </div>`).join('')}
+    <div class="costnote" style="margin-top:6px">${I.shield}A token is refunded automatically if a brief is removed, fake, or the buyer never engages.</div>
+    <div class="card pad" style="margin-top:6px"><div style="font-size:13px;color:var(--text-2);line-height:1.55"><b style="color:var(--text)">On Pro (£39/mo)</b> you get a monthly token allowance, a featured slot and analytics — works out cheaper than buying packs if you pitch regularly.</div></div>
+    <div class="note">Illustrative pricing for the prototype — real numbers get set against live demand. Nothing is charged here.</div>
+    <div style="height:14px"></div>`;
+}
+function buyTokens(i){
+  if(!state.billing.card){toast('Add a payment method first');state.stack=[...state.stack.filter(s=>s.s!=='topup'),{s:'billing'}];render();scrollTop();return;}
+  const p=PACKS[i];state.tokens+=p.n;
+  state.stack=state.stack.filter(s=>s.s!=='topup'&&s.s!=='billing');render();scrollTop();
+  toast(`+${p.n} tokens · £${p.price} charged to ${state.billing.card.brand} ••${state.billing.card.last4}`);
+}
+
+/* ============================ BILLING / CARD ============================ */
+function screenBilling(){
+  const c=state.billing.card;
+  return `${backBar('Back')}
+    <div class="eyebrow">Billing</div>
+    <h1 class="screen">Payment method</h1>
+    <div class="sub">Save a card to buy tokens in one tap and switch on auto top-up.</div>
+    <div class="securenote">${I.shield}Your card is stored by our payment provider (Stripe), never by Pitched. We only keep a secure reference — we don't see or store your full card number.</div>
+    ${c?`
+      <div class="savedcard"><div class="cbrand">${c.brand}</div><div><div class="cnum">•••• ${c.last4}</div><div class="cexp">Expires ${c.exp}</div></div><div class="crm" onclick="removeCard()">Remove</div></div>
+      <div style="height:14px"></div>
+      <div class="switch-row" onclick="toggleAuto()"><div class="sw-txt"><b>Auto top-up</b><span>Buy 15 tokens automatically when your balance drops below 3, so you never miss a brief.</span></div><div class="sw ${state.billing.auto?'on':''}"></div></div>
+      <div style="height:16px"></div>
+      <button class="btn btn-gold" onclick="push({s:'topup'})">${COIN}Buy tokens</button>
+    `:`
+      <div class="field"><label>Card number</label><input id="cc-num" inputmode="numeric" placeholder="1234 1234 1234 1234"></div>
+      <div class="row2"><div class="field"><label>Expiry</label><input id="cc-exp" inputmode="numeric" placeholder="MM/YY"></div><div class="field"><label>CVC</label><input id="cc-cvc" inputmode="numeric" placeholder="123"></div></div>
+      <div class="field"><label>Name on card</label><input id="cc-name" placeholder="Name as shown on card"></div>
+      <div class="field"><label>Billing postcode</label><input id="cc-pc" placeholder="SW1A 1AA"></div>
+      <button class="btn btn-gold" onclick="saveCard()">${I.shield}Save card securely</button>
+    `}
+    <div class="note">Prototype: nothing is charged and no real card data is stored or transmitted. In the live app this is Stripe's secure card field — the numbers never reach Pitched.</div>
+    <div style="height:16px"></div>`;
+}
+function saveCard(){
+  const num=(document.getElementById('cc-num').value||'').replace(/[\s-]/g,'');
+  const exp=(document.getElementById('cc-exp').value||'').trim();
+  const cvc=(document.getElementById('cc-cvc').value||'').trim();
+  if(num.length<12||!/^\d+$/.test(num)){toast('Enter a valid card number');return;}
+  if(!/^\d{1,2}\/\d{2}$/.test(exp)){toast('Expiry as MM/YY');return;}
+  if(cvc.length<3){toast('Enter the CVC');return;}
+  const b=num[0],brand=b==='4'?'VISA':b==='5'?'MC':b==='3'?'AMEX':b==='6'?'DISC':'CARD';
+  state.billing.card={brand,last4:num.slice(-4),exp};
+  render();scrollTop();toast('Card saved securely');
+}
+function removeCard(){state.billing.card=null;state.billing.auto=false;render();toast('Card removed');}
+function toggleAuto(){state.billing.auto=!state.billing.auto;render();toast(state.billing.auto?'Auto top-up on':'Auto top-up off');}
+
+/* ============================ MY PITCHES ============================ */
+function providerPitches(){
+  const mine=[];briefs.forEach(b=>b.pitches.forEach(pt=>{if(pt.pid==='p0')mine.push({b,pt});}));
+  return `<div class="eyebrow">Sent</div><h1 class="screen">My pitches</h1><div class="sub">Briefs you've pitched and where they stand.</div>
+    ${mine.length?mine.map(({b,pt})=>`<div class="card brief" onclick="push({s:'briefView',id:'${b.id}'})">
+      <div class="brief-top"><span class="badge badge-cat">${b.cat}</span><span class="badge badge-open">Sent</span></div><h3>${b.title}</h3>
+      <div class="brief-foot"><span class="pill">Quote <span class="mono">${pt.quote}</span></span><span class="sep"></span><span class="pill">Start <span class="mono">${pt.time}</span></span></div></div>`).join('')
+     :emptyBlock('No pitches yet','Find a brief that fits and send your first pitch.')+`<button class="btn btn-gold" style="margin-top:6px" onclick="go('feed')">${I.feed}Browse open briefs</button>`}`;
+}
+
+/* ============================ MESSAGES ============================ */
+function messagesList(){
+  const list=threads.filter(t=>t.side===state.role);
+  return `<div class="eyebrow">Inbox</div><h1 class="screen">Messages</h1><div class="sub">${state.role==='buyer'?'Conversations with operators you\'ve contacted.':'Buyers who\'ve reached out about your work.'}</div>
+    ${list.length?list.map(threadItem).join(''):emptyBlock('No messages yet',state.role==='buyer'?'Message an operator from one of your pitches to start a chat.':'When a buyer messages you, it\'ll show here.')}`;
+}
+function threadItem(t){
+  const name=t.withId?P(t.withId).name:t.withName,last=t.msgs[t.msgs.length-1],isV=t.withId&&P(t.withId).verified;
+  return `<div class="thread-item" onclick="push({s:'thread',id:'${t.id}'})">${avatar(name)}
+    <div class="ti-body"><div class="ti-name">${name} ${isV?vmark(P(t.withId)):''}</div>
+    <div class="ti-last">${last?(last.from==='you'?'You: ':'')+last.txt:'New conversation'}</div><div class="ti-sub">${t.sub}</div></div></div>`;
+}
+function screenThread(s){
+  const t=T(s.id),name=t.withId?P(t.withId).name:t.withName;
+  return `${backBar('Messages')}
+    <div class="chat-hd">${avatar(name)}<div><div style="font-weight:600;font-size:16px">${name}</div><div style="font-size:12px;color:var(--muted)">${t.sub}</div></div></div>
+    <div class="msgs" id="msg-scroll">${t.msgs.map(m=>`<div class="bub ${m.from}">${m.txt}</div>`).join('')||'<div class="empty" style="padding:30px"><p>Say hello to start the conversation.</p></div>'}</div>
+    <div style="height:66px"></div>
+    <div class="composer"><textarea id="composer-input" rows="1" placeholder="Write a message…" oninput="growBox(this)"></textarea><button class="send" onclick="sendMsg('${t.id}')">${I.send}</button></div>`;
+}
+function growBox(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+function sendMsg(tid){
+  const el=document.getElementById('composer-input'),v=el.value.trim();if(!v)return;
+  T(tid).msgs.push({from:'you',txt:v});render();
+  setTimeout(()=>{const mb=document.getElementById('msg-scroll');if(mb)mb.scrollTop=mb.scrollHeight;const ta=document.getElementById('composer-input');if(ta)ta.focus();},30);
+}
+
+/* ============================ AUTH GATE (Supabase) ============================
+   Publishable key is safe in the browser. If sign-in errors with
+   "Invalid API key", swap SUPABASE_KEY for the legacy anon public key
+   (Supabase > Project Settings > API). */
+const SUPABASE_URL='https://yfenhnmjdccatfwlcbur.supabase.co';
+const SUPABASE_KEY='sb_publishable_LG91i33haJHG-pbSyISd_A_VZM2DAtZ';
+let sb=null; try{ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY); }catch(e){}
+let gUser=null, signupRole='buyer';
+const $g=id=>document.getElementById(id);
+function gmsg(kind,text){const m=$g('gate-msg');if(m){m.className='gate-msg show '+kind;m.innerHTML=text;}}
+function gclear(){const m=$g('gate-msg');if(m){m.className='gate-msg';m.innerHTML='';}}
+function gbusy(btn,on,label){if(btn){btn.disabled=on;btn.innerHTML=on?'<span class="spin"></span>':label;}}
+function setSignupRole(r){signupRole=r;document.querySelectorAll('.gate-role').forEach(el=>el.classList.toggle('on',el.dataset.role===r));}
+function gateAnim(){const m=$g('gate-main');if(m){m.classList.remove('anim');void m.offsetWidth;m.classList.add('anim');}}
+
+function showGate(tab='login'){
+  document.getElementById('gate').classList.remove('hidden');
+  $g('gate-main').innerHTML=`
+    <div class="gate-seg">
+      <button class="${tab==='login'?'on':''}" onclick="showGate('login')">Log in</button>
+      <button class="${tab==='signup'?'on':''}" onclick="showGate('signup')">Sign up</button>
+    </div>
+    <div id="gate-msg" class="gate-msg"></div>
+    ${tab==='login'?gateLogin():gateSignup()}`;
+  if(tab==='signup') setSignupRole(signupRole);
+  gateAnim();
+}
+function gateLogin(){return `
+  <div class="gate-h">Welcome back.</div>
+  <div class="gate-sub">Sign in to your Pitched account.</div>
+  <div class="field"><label>Email</label><input id="li-email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com"></div>
+  <div class="field"><label>Password</label><input id="li-pass" type="password" autocomplete="current-password" placeholder="Your password"></div>
+  <button id="li-btn" class="btn btn-gold" onclick="doLogin()">Log in</button>
+  <div class="gate-note">No account yet? <a onclick="showGate('signup')">Create one</a></div>`;}
+function gateSignup(){return `
+  <div class="gate-h">Join Pitched.</div>
+  <div class="gate-sub">Create your account — choose how you'll use it.</div>
+  <div class="gate-roles">
+    <div class="gate-role" data-role="buyer" onclick="setSignupRole('buyer')"><b>I'm a Buyer</b><span>I need to hire a service</span></div>
+    <div class="gate-role" data-role="provider" onclick="setSignupRole('provider')"><b>I'm a Provider</b><span>I offer services &amp; pitch</span></div>
+  </div>
+  <div class="field"><label>Name</label><input id="su-name" type="text" autocomplete="name" placeholder="Your name or business"></div>
+  <div class="field"><label>Email</label><input id="su-email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com"></div>
+  <div class="field"><label>Password</label><input id="su-pass" type="password" autocomplete="new-password" placeholder="At least 6 characters"></div>
+  <button id="su-btn" class="btn btn-gold" onclick="doSignup()">Create account</button>
+  <div class="gate-note">By signing up you agree to the <a onclick="openTerms()">Terms &amp; Privacy</a>.</div>`;}
+
+async function doSignup(){
+  const btn=$g('su-btn'); gclear();
+  const name=$g('su-name').value.trim(), email=$g('su-email').value.trim(), pass=$g('su-pass').value;
+  if(!email||!pass){gmsg('err','Enter an email and password.');return;}
+  if(pass.length<6){gmsg('err','Password must be at least 6 characters.');return;}
+  gbusy(btn,true,'Create account');
+  try{
+    const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{full_name:name,role:signupRole}}});
+    if(error){gmsg('err',error.message);gbusy(btn,false,'Create account');return;}
+    if(data.session){await ensureProfile(data.user);enterApp(data.user);}
+    else{gmsg('info','Account created. Check your email to confirm, then log in.<br><br>To skip this while testing: Supabase → Authentication → Providers → Email → turn off <b>Confirm email</b>.');gbusy(btn,false,'Create account');}
+  }catch(e){gmsg('err','Something went wrong: '+(e.message||e));gbusy(btn,false,'Create account');}
+}
+async function doLogin(){
+  const btn=$g('li-btn'); gclear();
+  const email=$g('li-email').value.trim(), pass=$g('li-pass').value;
+  if(!email||!pass){gmsg('err','Enter your email and password.');return;}
+  gbusy(btn,true,'Log in');
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error){let t=error.message;if(/confirm/i.test(t))t='Your email isn\'t confirmed yet. Check your inbox, or turn off "Confirm email" in Supabase Auth settings while testing.';gmsg('err',t);gbusy(btn,false,'Log in');return;}
+    await ensureProfile(data.user);enterApp(data.user);
+  }catch(e){gmsg('err','Something went wrong: '+(e.message||e));gbusy(btn,false,'Log in');}
+}
+async function ensureProfile(user){
+  const role=user&&user.user_metadata?user.user_metadata.role:null;
+  try{
+    if(role==='provider'){
+      await sb.from('profiles').update({is_provider:true,full_name:(user.user_metadata.full_name||'')}).eq('id',user.id);
+      const {data:ex}=await sb.from('provider_profiles').select('id').eq('id',user.id).maybeSingle();
+      if(!ex){await sb.from('provider_profiles').insert({id:user.id});}
+    }else{
+      await sb.from('profiles').update({full_name:(user.user_metadata&&user.user_metadata.full_name)||''}).eq('id',user.id);
+    }
+  }catch(e){}
+}
+function enterApp(user){
+  gUser={id:user.id,email:user.email,name:((user.user_metadata&&user.user_metadata.full_name)||user.email.split('@')[0]),isProvider:(user.user_metadata&&user.user_metadata.role)==='provider',vetted:false};
+  document.getElementById('gate').classList.add('hidden');
+  if(gUser.isProvider && !gUser.vetted){ vStart(); return; }
+  state.role='buyer'; state.tab='home'; state.stack=[];
+  render();
+}
+async function doLogout(){
+  try{ await sb.auth.signOut(); }catch(e){}
+  gUser=null; signupRole='buyer';
+  showGate('login');
+}
+
+/* ============================ VETTING (provider onboarding) ============================ */
+const VI={
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.5 8.5-8 11-4.5-2.5-8-6-8-11V5l8-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
+  phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.6a2 2 0 01-.5 2.1L8 9.6a16 16 0 006 6l1.2-1.2a2 2 0 012.1-.5c.8.3 1.7.5 2.6.6a2 2 0 011.7 2z"/></svg>',
+  target:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>',
+  pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>',
+  build:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 00-5.4 5.4l-6.6 6.6a1.5 1.5 0 002.1 2.1l6.6-6.6a4 4 0 005.4-5.4l-2.8 2.8-2.1-2.1z"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>',
+  refresh:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>'
+};
+const TRACKS={
+  closer:{name:'High-ticket Closer',icon:'phone',desc:'Sales calls & closing for high-ticket offers',
+    qs:[
+      {q:'A prospect ends the call with "I need to think about it." Your best response?',o:["No problem — I'll follow up next week.","Totally understand — what specifically is giving you pause?","If you sign today I'll take 20% off.","What's there to think about? It's a no-brainer."],a:1},
+      {q:'What is the discovery stage primarily for?',o:["Pitching the offer as early as possible","Understanding the prospect's problem, stakes and ability to buy","Talking through your own credentials","Getting the price objection out of the way"],a:1},
+      {q:'A genuine price objection comes up. Strongest first move?',o:["Offer a discount immediately","Re-establish the value and cost of inaction before discussing price","End the call politely","Tell them they can't afford not to"],a:1},
+      {q:'Healthy close rates depend most on…',o:["High-pressure scripts","Lead qualification and pre-call nurture","Always being the cheapest option","Calling as many leads as possible regardless of fit"],a:1},
+      {q:'When should a closer NOT close a deal?',o:["When the prospect is a poor fit or can't afford it without harm","Never — always close","Any time they hesitate","When the commission is low"],a:0}
+    ]},
+  setter:{name:'Appointment Setter',icon:'target',desc:'Booking qualified calls from inbound & outreach',
+    qs:[
+      {q:'The core job of a setter on inbound DMs is to…',o:["Pitch and close the sale in the DMs","Qualify and book a call with fit prospects","Send the full price list straight away","Book everyone regardless of fit"],a:1},
+      {q:'A lead replies but seems unqualified. Best action?',o:["Book them anyway to hit your numbers","Ask a couple of qualifying questions before booking","Ignore them","Hard-pitch the programme immediately"],a:1},
+      {q:'Best practice for outreach?',o:["Send identical messages to thousands","Targeted, personalised outreach to a defined ICP","Buy a list and blast it","Whatever slips past spam filters"],a:1},
+      {q:'What keeps a pipeline/CRM healthy?',o:["Never updating statuses","Logging interactions and keeping stages current","Deleting every no-show","Only tracking closed deals"],a:1},
+      {q:'A booked call no-shows. Best follow-up?',o:["Mark it dead immediately","Reach out, understand why, offer to rebook","Message repeatedly until they reply","Do nothing"],a:1}
+    ]},
+  buyer:{name:'Media Buyer',icon:'chart',desc:'Paid acquisition across Meta, Google & more',
+    qs:[
+      {q:'ROAS measures…',o:["Cost per click","Revenue generated per unit of ad spend","Number of impressions","Follower growth"],a:1},
+      {q:'In a fresh account with little data, you should first…',o:["Scale spend aggressively on day one","Test creative and angles, gather data, then scale","Copy a competitor's exact ads","Turn off tracking to save budget"],a:1},
+      {q:'CTR is high but conversions are low. Most likely cause?',o:["The creative is bad","A landing page, offer or tracking mismatch","Budget is too high","Wrong ad platform entirely"],a:1},
+      {q:'Why does clean tracking & attribution matter?',o:["It doesn't","Decisions rely on accurate data — bad tracking wastes spend","Only so reports look tidy","To push CPMs up"],a:1},
+      {q:'A campaign is unprofitable after a fair test. Responsible move?',o:["Keep spending and hope it turns","Pause, diagnose, adjust creative/targeting/offer","Blame the platform","Quietly increase the budget"],a:1}
+    ]},
+  email:{name:'Email & CRM',icon:'pen',desc:'Lifecycle, flows & retention',soon:true},
+  copy:{name:'Copywriter',icon:'pen',desc:'Direct-response copy & sales assets',soon:true}
+};
+const PASS=4;
+let VS={step:'intro',track:null,qi:0,answers:[],profile:{name:'',head:'',loc:'',pkgs:[]}};
+
+function vGo(step){VS.step=step;vRender();}
+function vProgress(){const map={intro:6,track:18,quiz:18+(VS.qi/5)*44,result:64,profile:82,live:100};return Math.round(map[VS.step]||0);}
+function vRender(){
+  document.getElementById('vet-bar').style.width=vProgress()+'%';
+  document.getElementById('vet-tag').textContent=({intro:'Get vetted',track:'Choose specialism',quiz:'Assessment',result:'Result',profile:'Your profile',live:'Live'})[VS.step];
+  const m=document.getElementById('vet-main');
+  m.innerHTML=({intro:vIntro,track:vTrack,quiz:vQuiz,result:vResult,profile:vProfile,live:vLive})[VS.step]();
+  m.classList.remove('anim');void m.offsetWidth;m.classList.add('anim');m.scrollTop=0;
+}
+function vStart(){VS={step:'intro',track:null,qi:0,answers:[],profile:{name:(gUser&&gUser.name)||'',head:'',loc:'',pkgs:[]}};document.getElementById('gate').classList.add('hidden');document.getElementById('vet').classList.add('show');vRender();}
+function vIntro(){
+  return `
+    <div class="hero-seal"><div class="ring"></div><div class="core">${VI.shield}</div></div>
+    <div class="eyebrow">Provider onboarding</div>
+    <h1>Get vetted before you<br>advertise on Pitched.</h1>
+    <div class="sub">Pitched only lets proven operators offer their services. Pass a short competency assessment for your specialism, then build a profile buyers can actually trust.</div>
+    <div class="points">
+      <div class="point"><div class="pn">${VI.doc}</div><div class="pt"><b>Prove your competency</b><span>A focused assessment for your specialism — no fluff, real scenarios.</span></div></div>
+      <div class="point"><div class="pn">${VI.shield}</div><div class="pt"><b>Earn the Vetted badge</b><span>The mark buyers look for. It's the whole reason they're here.</span></div></div>
+      <div class="point"><div class="pn">${VI.build}</div><div class="pt"><b>Publish clear packages</b><span>Set out exactly what you offer and what it costs. No "DM for pricing".</span></div></div>
+    </div>
+    <button class="btn btn-gold" onclick="vGo('track')">Start assessment ${VI.arrow}</button>
+    <div class="note">Vetting protects everyone's standards — yours included. Passing puts you in front of buyers actively looking to hire.</div>`;
+}
+function vTrack(){
+  const cards=Object.entries(TRACKS).map(([k,t])=>{
+    if(t.soon) return `<div class="track soon"><div class="ic">${VI[t.icon]}</div><div class="tt"><b>${t.name}</b><span>${t.desc}</span></div><span class="badge-soon">Soon</span></div>`;
+    return `<div class="track" onclick="vPickTrack('${k}')"><div class="ic">${VI[t.icon]}</div><div class="tt"><b>${t.name}</b><span>${t.desc}</span></div><span class="arrow">${VI.arrow}</span></div>`;
+  }).join('');
+  return `<div class="eyebrow">Step 1</div><h1>What's your specialism?</h1>
+    <div class="sub">Pick the assessment that matches what you'll offer. You can add more specialisms later.</div>${cards}
+    <div class="note">More assessments are added as we open new categories. Each one is built with operators who actually do the work.</div>`;
+}
+function vPickTrack(k){VS.track=k;VS.qi=0;VS.answers=[];vGo('quiz');}
+function vQuiz(){
+  const t=TRACKS[VS.track],q=t.qs[VS.qi],sel=VS.answers[VS.qi];
+  const opts=q.o.map((o,i)=>`<div class="opt ${sel===i?'sel':''}" onclick="vPickOpt(${i})"><div class="box">${VI.check}</div><div class="lab">${o}</div></div>`).join('');
+  const last=VS.qi===t.qs.length-1;
+  return `<div class="qcount">${t.name} · Question ${VS.qi+1} of ${t.qs.length}</div>
+    <div class="qtext">${q.q}</div>${opts}
+    <div class="spacer"></div>
+    <button class="btn btn-gold" ${sel===undefined?'disabled':''} onclick="vNextQ()">${last?'See result':'Next question'} ${VI.arrow}</button>
+    ${VS.qi>0?`<button class="btn btn-line" style="margin-top:11px" onclick="vPrevQ()">Back</button>`:''}`;
+}
+function vPickOpt(i){VS.answers[VS.qi]=i;vRender();}
+function vNextQ(){if(VS.answers[VS.qi]===undefined){toast('Pick an answer');return;}if(VS.qi<TRACKS[VS.track].qs.length-1){VS.qi++;vRender();}else vGo('result');}
+function vPrevQ(){if(VS.qi>0){VS.qi--;vRender();}}
+function vScore(){return TRACKS[VS.track].qs.reduce((s,q,i)=>s+(VS.answers[i]===q.a?1:0),0);}
+function vResult(){
+  const t=TRACKS[VS.track],sc=vScore(),pass=sc>=PASS;
+  if(pass){
+    return `<div class="seal"><div class="ring"></div><div class="ring2"></div><div class="core">${VI.shield}</div></div>
+      <div class="res-h">You're vetted.</div>
+      <div class="res-sub">You passed the ${t.name} assessment. The Vetted badge is now yours — let's build your profile.</div>
+      <div class="score-card"><div class="sv">${sc}/${t.qs.length}</div><div class="sl">ASSESSMENT SCORE · PASS MARK ${PASS}/${t.qs.length}</div></div>
+      <div style="display:flex;justify-content:center;margin-bottom:22px"><span class="vet">${VI.check}Vetted ${t.name}</span></div>
+      <button class="btn btn-gold" onclick="vGo('profile')">Build my profile ${VI.arrow}</button>`;
+  }
+  return `<div class="seal fail"><div class="ring"></div><div class="ring2"></div><div class="core">${VI.lock}</div></div>
+    <div class="res-h">Not passed — yet.</div>
+    <div class="res-sub">You scored just under the bar this time. Have another look at the fundamentals and retake whenever you're ready — no limit, no penalty.</div>
+    <div class="score-card"><div class="sv">${sc}/${t.qs.length}</div><div class="sl">PASS MARK ${PASS}/${t.qs.length}</div></div>
+    <button class="btn btn-gold" onclick="vRetake()">${VI.refresh}Retake assessment</button>
+    <button class="btn btn-line" style="margin-top:11px" onclick="vGo('track')">Try a different specialism</button>`;
+}
+function vRetake(){VS.qi=0;VS.answers=[];vGo('quiz');}
+function vProfile(){
+  const t=TRACKS[VS.track];
+  const pkgs=VS.profile.pkgs.map((p,i)=>`
+    <div class="pkg"><div class="rm" onclick="vRmPkg(${i})">${VI.x}</div>
+      <div class="ph"><div class="pname">${p.name}</div><div class="pprice">£${p.price} <small>/ ${p.unit}</small></div></div>
+      ${p.desc?`<div class="pdesc">${p.desc}</div>`:''}
+      <div class="pdel">${VI.clock}${p.delivery||'Flexible'}</div>
+    </div>`).join('');
+  return `<div class="eyebrow">Step 2 · Vetted ${t.name}</div>
+    <h1>Build your profile</h1>
+    <div class="sub">This is what buyers see. Keep it specific — clarity wins work.</div>
+    <div class="field"><label>Display name</label><input id="pf-name" value="${VS.profile.name}" placeholder="e.g. Northbound Media" oninput="VS.profile.name=this.value"></div>
+    <div class="field"><label>Headline</label><input id="pf-head" value="${VS.profile.head}" placeholder="What you do, in one line" oninput="VS.profile.head=this.value"><div class="hint">e.g. "Meta &amp; Google ads for high-ticket coaching offers."</div></div>
+    <div class="field"><label>Location</label><input id="pf-loc" value="${VS.profile.loc}" placeholder="e.g. London / Remote" oninput="VS.profile.loc=this.value"></div>
+    <div class="sec-title">Your packages <span style="font-family:var(--fm);color:var(--gold)">${VS.profile.pkgs.length}/3</span></div>
+    ${pkgs}
+    ${VS.profile.pkgs.length<3?`
+    <div class="pkg-add">
+      <div class="field" style="margin-bottom:12px"><label>Package name</label><input id="pk-name" placeholder="e.g. Starter retainer"></div>
+      <div class="row2"><div class="field" style="margin-bottom:12px"><label>Price (£)</label><input id="pk-price" inputmode="numeric" placeholder="1500"></div>
+        <div class="field" style="margin-bottom:12px"><label>Per</label><select id="pk-unit"><option>month</option><option>project</option><option>one-off</option><option>week</option></select></div></div>
+      <div class="field" style="margin-bottom:12px"><label>Delivery / turnaround</label><input id="pk-del" placeholder="e.g. Live within 7 days"></div>
+      <div class="field" style="margin-bottom:12px"><label>What's included</label><textarea id="pk-desc" placeholder="2–3 lines on what they get."></textarea></div>
+      <button class="btn btn-line" onclick="vAddPkg()">${VI.plus}Add package</button>
+    </div>`:`<div class="note">You've added the maximum of 3 packages. Remove one to add another.</div>`}
+    <div class="foot-cta"><button class="btn btn-gold" onclick="vGoLive()">Publish my profile ${VI.arrow}</button></div>
+    <div class="note">Marketing rule we keep: packages describe the service and its price — never income or earnings claims.</div>`;
+}
+function vAddPkg(){
+  const name=document.getElementById('pk-name').value.trim();
+  const price=document.getElementById('pk-price').value.trim().replace(/[^0-9,]/g,'');
+  const unit=document.getElementById('pk-unit').value;
+  const del=document.getElementById('pk-del').value.trim();
+  const desc=document.getElementById('pk-desc').value.trim();
+  if(!name){toast('Name the package');return;}
+  if(!price){toast('Add a price');return;}
+  VS.profile.pkgs.push({name,price,unit,delivery:del,desc});
+  vRender();
+}
+function vRmPkg(i){VS.profile.pkgs.splice(i,1);vRender();}
+function vGoLive(){
+  if(!VS.profile.name.trim()){toast('Add your display name');return;}
+  if(!VS.profile.head.trim()){toast('Add a headline');return;}
+  if(!VS.profile.pkgs.length){toast('Add at least one package');return;}
+  vGo('live');
+}
+function vLive(){
+  const t=TRACKS[VS.track],p=VS.profile;
+  const pkgs=p.pkgs.map(pk=>`<div class="pc-pkg"><div class="n">${pk.name}${pk.delivery?`<small>${pk.delivery}</small>`:''}</div><div class="p">£${pk.price}/${pk.unit}</div></div>`).join('');
+  return `<div class="seal"><div class="ring"></div><div class="ring2"></div><div class="core">${VI.check}</div></div>
+    <div class="res-h">You're live.</div>
+    <div class="res-sub">Your profile is published and you can now pitch on briefs. Here's how buyers see you.</div>
+    <div class="preview-note">— Public profile preview —</div>
+    <div class="pcard">
+      <div class="pc-top"><div class="av">${initials(p.name)}</div>
+        <div style="flex:1;min-width:0"><div class="pc-name">${p.name} <span class="vet">${VI.check}Vetted</span></div>
+          <div class="pc-cat">${t.name}</div><div class="pc-head">${p.head}</div></div></div>
+      <div class="pc-meta"><span>${VI.shield.replace('<svg','<svg style="width:13px;height:13px;color:var(--gold);vertical-align:-2px"')} Vetted competency</span>
+        ${p.loc?`<span class="mono" style="margin-left:auto">${p.loc}</span>`:''}</div>
+      ${pkgs?`<div class="pc-pkgs">${pkgs}</div>`:''}
+    </div>
+    <div class="foot-cta"><button class="btn btn-gold" onclick="vFinish()">Enter Pitched ${VI.arrow}</button>
+      <button class="btn btn-line" style="margin-top:11px" onclick="vStart()">${VI.refresh}Run through again</button></div>
+    <div class="note">You're now a vetted provider — spend a token to pitch any open brief.</div>`;
+}
+function vFinish(){
+  try{
+    const me=P('p0');
+    if(me){
+      if(VS.profile.name) me.name=VS.profile.name;
+      if(VS.profile.head) me.head=VS.profile.head;
+      if(VS.profile.loc) me.loc=VS.profile.loc;
+      me.cat=({closer:'Closers & setters',setter:'Closers & setters',buyer:'Paid ads / media buying'})[VS.track]||me.cat;
+      me.verified=true; me.pkgs=VS.profile.pkgs.slice();
+    }
+  }catch(e){}
+  if(gUser) gUser.vetted=true;
+  document.getElementById('vet').classList.remove('show');
+  state.role='provider'; state.tab='feed'; state.stack=[];
+  render();
+}
+
+/* ============================ TERMS & PRIVACY ============================ */
+function openTerms(){document.getElementById('terms').classList.add('show');termsShow('terms');}
+function closeTerms(){document.getElementById('terms').classList.remove('show');}
+function termsShow(which){
+  document.getElementById('tm-t').classList.toggle('on',which==='terms');
+  document.getElementById('tm-p').classList.toggle('on',which==='privacy');
+  document.getElementById('terms-main').innerHTML=CAVEAT+(which==='terms'?TERMS_HTML:PRIVACY_HTML);
+  const tm=document.getElementById('terms-main'); if(tm) tm.scrollTop=0;
+}
+const CAVEAT=`<div class="caveat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.8L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.8a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><div><strong style="color:#F0D9A8">Draft for review — not legal advice.</strong> A solid starting point, but have a solicitor review both documents before launch, and register with the ICO. Replace every <span class="ph">[placeholder]</span> with your real details.</div></div>`;
+const TERMS_HTML=`
+  <div class="doc-h">Terms of Service</div>
+  <div class="meta">Last updated [date] · Version 0.1 (draft)</div>
+  <p class="intro">These Terms govern your use of Pitched, a curated marketplace that connects businesses seeking online-business services (<strong>Buyers</strong>) with vetted service providers (<strong>Providers</strong>). By creating an account or using Pitched, you agree to these Terms. If you don't agree, don't use the platform.</p>
+  <h2><span class="n">1</span>About us</h2>
+  <p>Pitched is operated by <span class="ph">[Company Legal Name]</span>, a company registered in England and Wales (company number <span class="ph">[Company Number]</span>), registered office <span class="ph">[Registered Address]</span>. Contact: <span class="ph">[contact@email]</span>.</p>
+  <h2><span class="n">2</span>Definitions</h2>
+  <ul>
+    <li><strong>Buyer</strong> — posts a Brief or contacts Providers to seek services.</li>
+    <li><strong>Provider</strong> — has passed vetting, offers services, publishes packages and submits Pitches.</li>
+    <li><strong>Brief</strong> — a request for services posted by a Buyer.</li>
+    <li><strong>Pitch</strong> — a Provider's proposal in response to a Brief.</li>
+    <li><strong>Tokens</strong> — credits a Provider uses to submit Pitches. Not money, not e-money, no cash value.</li>
+    <li><strong>Vetting</strong> — our assessment (competency, track record, identity) a Provider must pass to advertise.</li>
+  </ul>
+  <h2><span class="n">3</span>Eligibility and your account</h2>
+  <ul>
+    <li>You must be at least 18 and able to form a binding contract.</li>
+    <li>Provide accurate information and keep it up to date.</li>
+    <li>You're responsible for your account and keeping your login secure.</li>
+    <li>One account per person or business unless we agree otherwise; no impersonation or misrepresentation.</li>
+  </ul>
+  <h2><span class="n">4</span>What Pitched is — and isn't</h2>
+  <p>Pitched is an introduction and discovery platform. <strong>We are not a party to any agreement between a Buyer and a Provider.</strong> We don't employ Providers, don't supply the services, and don't supervise or guarantee the work.</p>
+  <div class="callout">Vetting is a quality filter, not a guarantee or endorsement. It means a Provider met our criteria at a point in time — not a warranty of performance, suitability or outcome. Do your own due diligence before hiring or accepting work.</div>
+  <h2><span class="n">5</span>Vetting and verification</h2>
+  <ul>
+    <li>Providers must pass vetting before they can advertise, appear as hireable, or submit Pitches.</li>
+    <li>We may grant, refuse, suspend or revoke vetted status at our discretion.</li>
+    <li>Badges and tiers reflect checks carried out; they don't guarantee future conduct or quality.</li>
+  </ul>
+  <h2><span class="n">6</span>Provider terms</h2>
+  <ul>
+    <li>Keep your profile, packages and pricing accurate. Only advertise what you can deliver.</li>
+    <li>Behave professionally. No spam or unsolicited bulk messaging.</li>
+    <li>Deliver what you agree directly with a Buyer.</li>
+    <li>Comply with all laws applicable to your services, including tax and advertising law.</li>
+  </ul>
+  <h2><span class="n">7</span>Buyer terms</h2>
+  <ul>
+    <li>Post genuine Briefs for real needs.</li>
+    <li>Treat Providers professionally.</li>
+    <li>You're responsible for selecting a Provider and the terms you agree with them.</li>
+  </ul>
+  <h2><span class="n">8</span>Tokens</h2>
+  <ul>
+    <li>Tokens let Providers submit Pitches; submitting consumes Tokens at the rate shown.</li>
+    <li>Tokens are <strong>not money</strong>, have no cash value, and are non-transferable.</li>
+    <li>We may vary Token pricing, pack sizes, allowances and consumption rates for future use.</li>
+    <li><strong>Refunds:</strong> a Token is refunded where the related Brief is removed, fraudulent, or the Buyer never engages within the period we specify. Otherwise consumed Tokens are non-refundable.</li>
+    <li>Unused Tokens may expire after <span class="ph">[period]</span> of inactivity.</li>
+    <li>If you enable auto top-up, you authorise us to charge your saved payment method when your balance falls below your threshold. You can switch it off anytime.</li>
+  </ul>
+  <h2><span class="n">9</span>Payments</h2>
+  <ul>
+    <li>Payments are processed by <strong>Stripe</strong>; paying means you also accept Stripe's terms.</li>
+    <li><strong>We don't store your full card details</strong> — Stripe does; we keep only a secure reference.</li>
+    <li>Subscriptions renew automatically until cancelled; cancellation takes effect at the end of the period and we don't refund part-periods unless the law requires.</li>
+    <li>We may change prices on notice. Continued use means acceptance.</li>
+    <li>Failed payments may lead to suspension of paid features.</li>
+  </ul>
+  <h2><span class="n">10</span>Cancellation and consumer rights</h2>
+  <p>Consumers may have a statutory right to cancel digital content within 14 days. <strong>By buying Tokens or a subscription and using them immediately, you ask us to start supply during the cancellation period and accept you lose the right to cancel once the digital content has been used.</strong> Nothing here affects rights that can't be excluded by law.</p>
+  <h2><span class="n">11</span>Your Content and conduct</h2>
+  <p>You keep ownership of your Content and grant us a worldwide, non-exclusive, royalty-free licence to host, display and distribute it to operate and promote Pitched. You confirm you have the rights to everything you post.</p>
+  <p>You must not post or do anything that:</p>
+  <ul>
+    <li>is unlawful, fraudulent, defamatory, hateful, harassing, or infringes others' rights;</li>
+    <li>is misleading about your services, results, identity or affiliations;</li>
+    <li>makes or implies guaranteed income, earnings or profit claims;</li>
+    <li>is spam, scraping, bulk unsolicited messaging, malware, or attempts to bypass security or vetting;</li>
+    <li>solicits users off-platform to evade fees or these Terms.</li>
+  </ul>
+  <p>We may moderate, remove Content, limit features or suspend accounts to enforce these Terms or protect users.</p>
+  <h2><span class="n">12</span>No income or earnings guarantees</h2>
+  <div class="callout">Pitched connects people with services. <strong>We make no representation or guarantee about the income, earnings, leads, clients or results any Provider will obtain</strong>, or the outcomes a Buyer will achieve. Examples are illustrative, not promises.</div>
+  <h2><span class="n">13</span>Dealings between users</h2>
+  <p>Engagements are agreed and carried out directly between Buyers and Providers. To the extent permitted by law, <strong>we are not responsible for the quality, safety, legality, delivery or payment of any work</strong>. We may offer informal dispute support but are not obliged to and are not an arbitrator.</p>
+  <h2><span class="n">14</span>Intellectual property</h2>
+  <p>Pitched — its software, design, branding and content we create — belongs to us or our licensors. You may not copy, modify, reverse-engineer or exploit it except as these Terms allow.</p>
+  <h2><span class="n">15</span>Disclaimers</h2>
+  <p>Pitched is provided "as is" and "as available". We don't warrant it will be uninterrupted, error-free, or produce any particular result.</p>
+  <h2><span class="n">16</span>Limitation of liability</h2>
+  <p>Nothing excludes liability that can't be excluded by law (including death or personal injury from negligence, or fraud). Subject to that, to the fullest extent permitted by law:</p>
+  <ul>
+    <li>we're not liable for indirect or consequential loss, or loss of profit, business, goodwill or data;</li>
+    <li>we're not liable for the acts, omissions or content of users; and</li>
+    <li>our total liability in any 12-month period is limited to the greater of what you paid us in that period or <span class="ph">[£100]</span>.</li>
+  </ul>
+  <h2><span class="n">17</span>Indemnity</h2>
+  <p>You agree to indemnify us against claims, losses and costs arising from your Content, your use of Pitched, your dealings with other users, or your breach of these Terms or the law.</p>
+  <h2><span class="n">18</span>Suspension and termination</h2>
+  <p>You can close your account anytime. We may suspend or terminate access for breach, where required by law, or to protect users. Clauses that should survive (liability, IP, indemnity) continue.</p>
+  <h2><span class="n">19</span>Changes to these Terms</h2>
+  <p>We may update these Terms. For material changes we'll give reasonable notice. Continued use means acceptance.</p>
+  <h2><span class="n">20</span>General</h2>
+  <ul>
+    <li>We may assign these Terms; you may not without our consent.</li>
+    <li>If a provision is unenforceable, the rest remain in force.</li>
+    <li>These Terms and our Privacy Policy are the entire agreement about Pitched.</li>
+  </ul>
+  <h2><span class="n">21</span>Governing law</h2>
+  <p>These Terms are governed by the laws of England and Wales, and its courts have exclusive jurisdiction, subject to mandatory consumer protections where you live.</p>
+  <h2><span class="n">22</span>Contact</h2>
+  <p>Questions: <span class="ph">[contact@email]</span>.</p>`;
+const PRIVACY_HTML=`
+  <div class="doc-h">Privacy Policy</div>
+  <div class="meta">Last updated [date] · Version 0.1 (draft)</div>
+  <p class="intro">This explains what personal data Pitched collects, how we use it, and your rights. <span class="ph">[Company Legal Name]</span> is the data controller. We process data under UK data protection law (UK GDPR and the Data Protection Act 2018).</p>
+  <h2><span class="n">1</span>Who we are</h2>
+  <p>Controller: <span class="ph">[Company Legal Name]</span>, <span class="ph">[Registered Address]</span>. Privacy contact: <span class="ph">[privacy@email]</span>.</p>
+  <h2><span class="n">2</span>The data we collect</h2>
+  <h3>Data you give us</h3>
+  <ul>
+    <li>Account: name, email, password, role.</li>
+    <li>Profile &amp; packages: business name, location, headline, services, pricing, portfolio, verification info.</li>
+    <li>Activity: Briefs, Pitches, messages, reviews, posts.</li>
+    <li>Support and correspondence.</li>
+  </ul>
+  <h3>Collected automatically</h3>
+  <ul><li>Usage and device data: actions, IP address, browser/device type, via cookies.</li></ul>
+  <h3>From third parties</h3>
+  <ul><li>Payment status and references from Stripe; verification results from any provider we use.</li></ul>
+  <div class="callout"><strong>We don't collect or store your full card number.</strong> Card details are handled by Stripe. We receive only what we need — e.g. a secure token and the card's last four digits.</div>
+  <h2><span class="n">3</span>How and why we use it</h2>
+  <ul>
+    <li>Provide and operate Pitched, including matching and showing your profile — <strong>contract</strong>;</li>
+    <li>Vetting, verification, quality and safety — <strong>legitimate interests</strong>, and <strong>consent</strong> where needed;</li>
+    <li>Take payments, manage subscriptions and Tokens, prevent fraud — <strong>contract / legitimate interests</strong>;</li>
+    <li>Communicate about your account — <strong>contract / legitimate interests</strong>;</li>
+    <li>Marketing where you've agreed — <strong>consent</strong> (opt out anytime);</li>
+    <li>Comply with legal obligations and enforce our Terms.</li>
+  </ul>
+  <h2><span class="n">4</span>Who we share it with</h2>
+  <ul>
+    <li><strong>Other users:</strong> your public profile, Briefs and Pitches are visible by design.</li>
+    <li><strong>Processors:</strong> hosting/database, Stripe, email and analytics — acting on our instructions.</li>
+    <li><strong>Legal &amp; safety:</strong> where required by law or to protect users.</li>
+    <li><strong>Business transfers:</strong> data may transfer if we restructure, merge or sell.</li>
+  </ul>
+  <p>We don't sell your personal data.</p>
+  <h2><span class="n">5</span>International transfers</h2>
+  <p>Some providers may process data outside the UK; where they do, we rely on appropriate safeguards (e.g. UK adequacy or standard contractual clauses).</p>
+  <h2><span class="n">6</span>How long we keep it</h2>
+  <p>For as long as your account is active and as needed to provide the service, then as required for legal, accounting or dispute purposes, after which we delete or anonymise it.</p>
+  <h2><span class="n">7</span>Security</h2>
+  <p>We use appropriate technical and organisational measures, including access controls and encryption in transit. We'll notify you and the regulator of breaches where required.</p>
+  <h2><span class="n">8</span>Your rights</h2>
+  <p>You can access, correct, erase, restrict or object to processing, request portability, and withdraw consent. Contact <span class="ph">[privacy@email]</span>. You can also complain to the ICO at ico.org.uk.</p>
+  <h2><span class="n">9</span>Cookies</h2>
+  <p>We use cookies to keep you signed in, remember preferences and understand usage. You can control non-essential cookies via <span class="ph">[your cookie settings]</span>.</p>
+  <h2><span class="n">10</span>Marketing</h2>
+  <p>We only send marketing where you've agreed. Every message has an easy opt-out.</p>
+  <h2><span class="n">11</span>Children</h2>
+  <p>Pitched is for users aged 18+. We don't knowingly collect data from children.</p>
+  <h2><span class="n">12</span>Changes</h2>
+  <p>We may update this policy and will post the new version here, with notice for material changes.</p>
+  <h2><span class="n">13</span>Contact</h2>
+  <p>Privacy questions: <span class="ph">[privacy@email]</span>.</p>`;
+
+/* ============================ BOOT ============================ */
+(async function boot(){
+  if(!window.supabase||!sb){
+    document.getElementById('gate').classList.remove('hidden');
+    $g('gate-main').innerHTML=`<div class="gate-msg err show">Couldn't load the Supabase library. Check your connection and reload. If you're viewing this inside the chat preview, open the file in a browser instead.</div>`;
+    return;
+  }
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(session){const {data:{user}}=await sb.auth.getUser(); enterApp(user);}
+    else showGate('login');
+  }catch(e){ showGate('login'); }
+})();
+</script>
+</body>
+</html>
